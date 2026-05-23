@@ -36,7 +36,8 @@ public class AlquerqueController extends Controller {
         AlquerqueStageModel stage = (AlquerqueStageModel) model.getGameStage();
         Player p = model.getCurrentPlayer();
 
-        System.out.println("Turn: " + stage.getCount() + "\n");
+        System.out.println("Turn: " + stage.getCount());
+        System.out.println("Pawns left (" + stage.getWhitePawnsLeft() + "/" + stage.getBlackPawnsLeft() + ") \n");
 
         if (p.getType() == Player.COMPUTER) {
             System.out.println("COMPUTER PLAYS...");
@@ -59,6 +60,7 @@ public class AlquerqueController extends Controller {
 
             while (!ok) {
 
+
                 System.out.print(">");
                 String line = scanner.nextLine();
 
@@ -67,10 +69,12 @@ public class AlquerqueController extends Controller {
                     System.out.println("");
                     endGame();
                 }
-                ok = analyseAndPlay(line);
+                else {
+                    ok = analyseAndPlay(line);
 
-                if (!ok) {
-                    System.out.println("incorrect instruction. retry !");
+                    if (!ok) {
+                        System.out.println("incorrect instruction. retry !");
+                    }
                 }
             }
         }
@@ -155,6 +159,9 @@ public class AlquerqueController extends Controller {
             actions.addAll(remove);
             actions.setDoEndOfTurn(true);
             new ActionPlayer(model, this, actions).start();
+
+            // Call a method to automaticalt capture again and again opponent's pawns if it is possible from the destination point
+            multipleCaptures(dst);
         }
         else {
             // Simple move: just verify if the current pawn can move to the wished direction
@@ -194,5 +201,53 @@ public class AlquerqueController extends Controller {
             }
         }
         return false;
+    }
+
+    /**
+     * Recapture automaticly if is it possible from the registered position on param for the current player
+     */
+
+    private void multipleCaptures(Point point) {
+        AlquerqueStageModel stage = (AlquerqueStageModel) model.getGameStage();
+        AlquerqueBoard board = stage.getBoard();
+
+        // Current player's color
+        int currentColor;
+        if (model.getIdPlayer() == 0)
+            currentColor = Pawn.PAWN_WHITE;
+        else
+            currentColor = Pawn.PAWN_BLACK;
+
+        int row = point.y;
+        int col = point.x;
+
+        List<Point> captures = board.getCaptures(row, col, currentColor);
+
+        // Recursion's end if there are no capturable pawns
+        if (captures.isEmpty()) {
+            return;
+        }
+
+        // We delete the first element of the the list
+        Point nextDst = captures.get(0);
+
+        Pawn pawn = (Pawn) board.getElement(row, col);
+
+        int midRow = (row + nextDst.y) / 2;
+        int midCol = (col + nextDst.x) / 2;
+        Pawn captured = (Pawn) board.getElement(midRow, midCol);
+
+        ActionList actions = ActionFactory.generatePutInContainer(model, pawn, "alquerqueboard", nextDst.y, nextDst.x);
+
+        ActionList remove = ActionFactory.generateRemoveFromStage(model, captured);
+
+        actions.addAll(remove);
+
+        actions.setDoEndOfTurn(false);
+
+        new ActionPlayer(model, this, actions).start();
+
+        // call the same function again
+        multipleCaptures(nextDst);
     }
 }
