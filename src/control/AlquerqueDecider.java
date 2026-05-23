@@ -21,13 +21,13 @@ public class AlquerqueDecider extends Decider {
         AlquerqueStageModel stage = (AlquerqueStageModel) model.getGameStage();
         AlquerqueBoard board = stage.getBoard();
 
-        int color = (model.getIdPlayer() == 0) ? Pion.PAWN_WHITE : Pion.PAWN_BLACK;
+        int color = (model.getIdPlayer() == 0) ? Pawn.PAWN_WHITE : Pawn.PAWN_BLACK;
 
-        Pion[] myPawns = (color == Pion.PAWN_WHITE) ? stage.getWhitePawns() : stage.getBlackPawns();
+        Pawn[] myPawns = (color == Pawn.PAWN_WHITE) ? stage.getWhitePawns() : stage.getBlackPawns();
 
-        // Collecter toutes les captures possibles
+        // Collecte toutes les captures possibles
         List<int[]> captureOptions = new ArrayList<>();
-        for (Pion p : myPawns) {
+        for (Pawn p : myPawns) {
             if (!p.isVisible()) continue; // Ca fonctionne un break en python mon reuf
             int[] cell = board.getElementCell(p);
             if (cell == null) continue;
@@ -45,7 +45,7 @@ public class AlquerqueDecider extends Decider {
 
         // Sinon, collecter tous les déplacements simples
         List<int[]> moveOptions = new ArrayList<>();
-        for (Pion p : myPawns) {
+        for (Pawn p : myPawns) {
             if (!p.isVisible()) continue;
             int[] cell = board.getElementCell(p);
             if (cell == null) continue;
@@ -62,21 +62,21 @@ public class AlquerqueDecider extends Decider {
         }
 
         int[] choice = moveOptions.get(rng.nextInt(moveOptions.size()));
-        Pion pion = (Pion) board.getElement(choice[0], choice[1]);
+        Pawn pawn = (Pawn) board.getElement(choice[0], choice[1]);
         ActionList actions = ActionFactory.generatePutInContainer(
-                model, pion, "alquerqueboard", choice[2], choice[3]);
+                model, pawn, "alquerqueboard", choice[2], choice[3]);
         actions.setDoEndOfTurn(true);
         return actions;
     }
 
     private ActionList buildCapture(AlquerqueBoard board,
                                     int srcR, int srcC, int dstR, int dstC, int color) {
-        Pion pion = (Pion) board.getElement(srcR, srcC);
+        Pawn pawn = (Pawn) board.getElement(srcR, srcC);
         int midR = (srcR + dstR) / 2;
         int midC = (srcC + dstC) / 2;
-        Pion captured = (Pion) board.getElement(midR, midC);
+        Pawn captured = (Pawn) board.getElement(midR, midC);
         ActionList actions = ActionFactory.generatePutInContainer(
-                model, pion, "alquerqueboard", dstR, dstC);
+                model, pawn, "alquerqueboard", dstR, dstC);
         actions.addAll(ActionFactory.generateRemoveFromStage(model, captured));
         actions.setDoEndOfTurn(true);
         return actions;

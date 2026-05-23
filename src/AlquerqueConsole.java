@@ -1,6 +1,7 @@
 import boardifier.control.StageFactory;
 import boardifier.model.GameException;
 import boardifier.model.Model;
+import boardifier.model.Player;
 import boardifier.view.View;
 import control.AlquerqueController;
 
@@ -8,54 +9,53 @@ public class AlquerqueConsole {
 
     public static void main(String[] args) {
 
-        // Mode de jeu : 0=humain/humain, 1=humain/IA, 2=IA/IA
+        // Game Mod : 0=human vs human, 1=human/AI, 2=AI/AI
         int mode = 0;
         if (args.length == 1) {
             try {
                 mode = Integer.parseInt(args[0]);
                 if (mode < 0 || mode > 2) mode = 0;
             }
-            // J'utilise catch en permanence pour ne pas que ça plante
+            // utilisez try/catch en permanence pour ne pas que ça plante
             catch (NumberFormatException e) { mode = 0; }
         }
 
-        // Créer le model
+        // Create the modek
         Model model = new Model();
 
-        // Ajouter les joueurs
+        // Add the players
         if (mode == 0) {
-            model.addHumanPlayer("Blanc");
-            model.addHumanPlayer("Noir");
+            model.addHumanPlayer("WHITE");
+            model.addHumanPlayer("BLACK");
         }
         else if (mode == 1) {
-            model.addHumanPlayer("Blanc");
-            model.addComputerPlayer("Noir (IA)");
+            model.addHumanPlayer("WHITE");
+            model.addComputerPlayer("BLACK (IA)");
         }
         else {
-            model.addComputerPlayer("Blanc (IA)");
-            model.addComputerPlayer("Noir (IA)");
+            model.addComputerPlayer("WHITE (IA)");
+            model.addComputerPlayer("BLACK (IA)");
         }
 
-        // Enregistrer les classes Model et View pour le stage "alquerque"
-        // Le nom doit correspondre exactement dans les deux sens
+        // Register model and view for the stage "alquerque"
         StageFactory.registerModelAndView(
                 "alquerque",
                 "model.AlquerqueStageModel",
                 "view.AlquerqueStageView"
         );
 
-        // Créer la View et le Controller
+        // Create the View and the Controller
         View view = new View(model);
         AlquerqueController controller = new AlquerqueController(model, view);
 
-        // Démarrer
+
         controller.setFirstStageName("alquerque");
         try {
             controller.startGame();
             controller.stageLoop();
         }
         catch (GameException e) {
-            System.err.println("Ca recommence... : " + e.getMessage());
+            System.err.println("Un problème est survenue... " + e.getMessage());
         }
     }
 }

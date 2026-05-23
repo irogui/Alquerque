@@ -172,7 +172,7 @@ public abstract class Controller {
      * winner and that proposes to start a new game or to quit.
      */
     public void endGame() {
-        //System.out.println("END THE GAME");
+        System.out.println("END THE GAME");
         if (model.getIdWinner() != -1) {
             System.out.println(model.getPlayers().get(model.getIdWinner()).getName() + " wins");
         } else {

@@ -5,7 +5,7 @@ import boardifier.view.ClassicBoardLook;
 import boardifier.view.GameStageView;
 import boardifier.view.TextLook;
 import model.AlquerqueStageModel;
-import model.Pion;
+import model.Pawn;
 
 public class AlquerqueStageView extends GameStageView {
 
@@ -17,20 +17,20 @@ public class AlquerqueStageView extends GameStageView {
     public void createLooks() {
         AlquerqueStageModel stageModel = (AlquerqueStageModel) gameStageModel;
 
-        // Paramètres : hauteur cellule, largeur cellule, élément, bordure
-        addLook(new ClassicBoardLook(1, 3, stageModel.getBoard(), -1, 1, true));
+        // Parameters : height, width, élément, border
+        addLook(new ClassicBoardLook(2, 4, stageModel.getBoard(), 1, 1, true));
 
-        // Look de chaque pion blanc
-        for (Pion p : stageModel.getWhitePawns()) {
-            addLook(new PionLook(p));
+        // Pawn white's look
+        for (Pawn p : stageModel.getWhitePawns()) {
+            addLook(new PawnLook(p));
         }
 
-        // Look de chaque pion noir
-        for (Pion p : stageModel.getBlackPawns()) {
-            addLook(new PionLook(p));
+        // Pawn black's look
+        for (Pawn p : stageModel.getBlackPawns()) {
+            addLook(new PawnLook(p));
         }
 
-        // Look du texte joueur courant
+        // Text's look
         addLook(new TextLook(stageModel.getPlayerName()));
     }
 }

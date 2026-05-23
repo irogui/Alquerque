@@ -7,12 +7,12 @@ import boardifier.view.View;
 import model.*;
 
 import java.awt.Point;
-import java.io.*;
 import java.util.List;
+import java.util.Scanner;
 
 public class AlquerqueController extends Controller {
 
-    private BufferedReader consoleIn;
+    private Scanner scanner;
 
     public AlquerqueController(Model model, View view) {
         super(model, view);
@@ -20,40 +20,58 @@ public class AlquerqueController extends Controller {
 
     @Override
     public void stageLoop() {
-        consoleIn = new BufferedReader(new InputStreamReader(System.in));
+        // The BufferedReader didn't work so we moved to the classic scanner
+        scanner = new Scanner(System.in);
         update();
         while (!model.isEndStage()) {
             playTurn();
             endOfTurn();
+            System.out.println("");
             update();
         }
         endGame();
     }
 
     private void playTurn() {
+        AlquerqueStageModel stage = (AlquerqueStageModel) model.getGameStage();
         Player p = model.getCurrentPlayer();
 
+        System.out.println("Turn: " + stage.getCount() + "\n");
+
         if (p.getType() == Player.COMPUTER) {
-            System.out.println("L'ordinateur réfléchit...");
+            System.out.println("COMPUTER PLAYS...");
+
+            // A bot last at least 3 seconds to clearly see the game
+            try {
+                Thread.sleep(3000); // c'est en millisecondes en java
+            }
+            catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+
             AlquerqueDecider decider = new AlquerqueDecider(model, this);
             ActionPlayer play = new ActionPlayer(model, this, decider, null);
             play.start();
         }
 
         else {
-            boolean cap = false;
+            boolean ok = false;
 
-            while (!cap) {
-                System.out.print(p.getName() + " (ex: A1-B2) : ");
-                try {
-                    String line = consoleIn.readLine();
-                    cap = analyseAndPlay(line);
+            while (!ok) {
 
-                    if (!cap)
-                        System.out.println("Coup invalide, va arracher tes morts !.");
+                System.out.print(">");
+                String line = scanner.nextLine();
 
+                // End the game if a user enter 'stop'
+                if (line.equals("stop")) {
+                    System.out.println("");
+                    endGame();
                 }
-                catch (IOException e) {}
+                ok = analyseAndPlay(line);
+
+                if (!ok) {
+                    System.out.println("incorrect instruction. retry !");
+                }
             }
         }
     }
@@ -61,11 +79,17 @@ public class AlquerqueController extends Controller {
     public void endOfTurn() {
         model.setNextPlayer();
         AlquerqueStageModel stage = (AlquerqueStageModel) model.getGameStage();
+
+        // increment of the turns when a the white player plays
+        if (model.getIdPlayer() == 0)
+            stage.incrementCount();
+
         stage.getPlayerName().setText(model.getCurrentPlayerName());
     }
 
     private boolean analyseAndPlay(String line) {
-        // Format attendu : "A1-B2" (5 caractères)
+        // Allowed form: "A1-B2"
+
         if (line == null || line.length() != 5)
             return false;
 
@@ -77,7 +101,7 @@ public class AlquerqueController extends Controller {
         int dstCol = line.charAt(3) - 'A';
         int dstRow = line.charAt(4) - '1';
 
-        // Vérif coo valides (cad ne dépasse pas du plateau)
+        // Verify if the coordinates doesn't cross the board
         if (srcRow<0 || srcRow>4 || srcCol<0 || srcCol>4)
             return false;
         if (dstRow<0 || dstRow>4 || dstCol<0 || dstCol>4)
@@ -86,77 +110,88 @@ public class AlquerqueController extends Controller {
         AlquerqueStageModel stage = (AlquerqueStageModel) model.getGameStage();
         AlquerqueBoard board = stage.getBoard();
 
-        // Y a-t-il un pion du joueur courant à la source ?
-        if (board.isEmptyAt(srcRow, srcCol))
-            return false;
 
-        Pion pion = (Pion) board.getElement(srcRow, srcCol);
+        if (board.isEmptyAt(srcRow, srcCol)) {
+            System.out.println("No pawns here...");
+            return false;
+        }
+
+        Pawn pawn = (Pawn) board.getElement(srcRow, srcCol);
 
         int currentColor;
         if (model.getIdPlayer() == 0)
-            currentColor = Pion.PAWN_WHITE;
+            currentColor = Pawn.PAWN_WHITE;
         else
-            currentColor = Pion.PAWN_BLACK;
+            currentColor = Pawn.PAWN_BLACK;
 
-        if (pion.getColor() != currentColor) return false;
+        if (pawn.getColor() != currentColor) {
+            System.out.println("That's not your pawn...");
+            return false;
+        }
 
-        // Vérif si des captures sont disponibles
+        // return true if there are any captures for the player
         boolean captureAvailable = hasAnyCapture(stage, currentColor);
 
-        // Vérifier si le coup joué est une capture
+        // Verify if the player wants to capture a pawn or make a simple move
         List<Point> captures = board.getCaptures(srcRow, srcCol, currentColor);
         Point dst = new Point(dstCol, dstRow);
         boolean isCapture = captures.contains(dst);
 
-        // Si une capture est possible mais le joueur ne capture pas → invalide
-        if (captureAvailable && !isCapture) return false;
+        // If a capture is available but the player didn't noticed it
+        if (captureAvailable && !isCapture) {
+            System.out.println("First you have to captur a pawn...");
+            return false;
+        }
 
         if (isCapture) {
-            // Trouver le pion adverse à supprimer (case intermédiaire)
+            // Find the opponent's pawn to deltete it
             int midRow = (srcRow + dstRow) / 2;
             int midCol = (srcCol + dstCol) / 2;
-            Pion captured = (Pion) board.getElement(midRow, midCol);
+            Pawn captured = (Pawn) board.getElement(midRow, midCol);
 
-            // ActionList : déplacer le pion joueur + supprimer le pion capturé
-            ActionList actions = ActionFactory.generatePutInContainer(model, pion, "alquerqueboard", dstRow, dstCol);
+            // ActionList : move the pawn of the current player and delete the captured pawn from the board
+            ActionList actions = ActionFactory.generatePutInContainer(model, pawn, "alquerqueboard", dstRow, dstCol);
             ActionList remove = ActionFactory.generateRemoveFromStage(model, captured);
             actions.addAll(remove);
             actions.setDoEndOfTurn(true);
             new ActionPlayer(model, this, actions).start();
         }
         else {
-            // Déplacement simple : vérifier que la case dest. est dans les coups valides
+            // Simple move: just verify if the current pawn can move to the wished direction
             List<Point> moves = board.getSimpleMoves(srcRow, srcCol);
-            if (!moves.contains(dst)) return false;
+            if (!moves.contains(dst)) {
+                System.out.println("You cannot go this way...");
+                return false;
+            }
 
-            ActionList actions = ActionFactory.generatePutInContainer(
-                    model, pion, "alquerqueboard", dstRow, dstCol);
+            ActionList actions = ActionFactory.generatePutInContainer(model, pawn, "alquerqueboard", dstRow, dstCol);
             actions.setDoEndOfTurn(true);
             new ActionPlayer(model, this, actions).start();
         }
+
         return true;
     }
 
     /**
-     * Vérifie si le joueur de la couleur donnée a au moins une capture possible
-     * sur tout le plateau. Si oui, il est obligé de capturer.
+     * Return true if the player as at least a captur to make
      */
     private boolean hasAnyCapture(AlquerqueStageModel stage, int color) {
         AlquerqueBoard board = stage.getBoard();
 
-        Pion[] pawns;
+        Pawn[] pawns;
 
-        if (color == Pion.PAWN_WHITE)
+        if (color == Pawn.PAWN_WHITE)
             pawns = stage.getWhitePawns();
         else
             pawns = stage.getBlackPawns();
 
-        for (Pion p : pawns) {
-            if (!p.isVisible()) continue; // pion capturé = invisible
-            int[] coords = board.getElementCell(p);
-            if (coords == null) continue;
-            if (!board.getCaptures(coords[0], coords[1], color).isEmpty())
-                return true;
+        for (Pawn p : pawns) {
+            if (p.isVisible()) {
+                int[] coords = board.getElementCell(p);
+                if (!(coords == null))
+                    if (!board.getCaptures(coords[0], coords[1], color).isEmpty())
+                        return true;
+            }
         }
         return false;
     }
