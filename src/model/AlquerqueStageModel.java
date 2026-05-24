@@ -63,7 +63,11 @@ public class AlquerqueStageModel extends GameStageModel {
          * After each player action this callback is called by boardifier
          */
         onRemoveFromContainer((element, container, row, col) -> {
-            if ((!(element instanceof Pawn)) && (container != board)) return;
+            if (!(element instanceof Pawn))
+                return;
+
+            if (container != board)
+                return;
 
             // If the pawn is still visible, it means that it's juste a simple move and not a capture
             if (element.isVisible()) return;

@@ -13,9 +13,11 @@ import java.util.Scanner;
 public class AlquerqueController extends Controller {
 
     private Scanner scanner;
+    private final int iaMode;
 
-    public AlquerqueController(Model model, View view) {
+    public AlquerqueController(Model model, View view, int iaMode) {
         super(model, view);
+        this.iaMode = iaMode;
     }
 
     @Override
@@ -40,19 +42,25 @@ public class AlquerqueController extends Controller {
         System.out.println("Pawns left (" + stage.getWhitePawnsLeft() + "/" + stage.getBlackPawnsLeft() + ") \n");
 
         if (p.getType() == Player.COMPUTER) {
-            System.out.println("COMPUTER PLAYS...");
+            System.out.println("COMPUTER THINKING...");
 
-            // A bot last at least 3 seconds to clearly see the game
+            // A bot last at least 3 seconds for the user to clearly see the game
             try {
-                Thread.sleep(3000); // c'est en millisecondes en java
+                Thread.sleep(1000); // c'est en millisecondes en java
             }
             catch (InterruptedException e) {
                 e.printStackTrace();
             }
 
-            AlquerqueDecider decider = new AlquerqueDecider(model, this);
+            AlquerqueDecider decider = new AlquerqueDecider(model, this, iaMode);
             ActionPlayer play = new ActionPlayer(model, this, decider, null);
             play.start();
+
+            // If the AI made a capture, allow it to chain further captures
+            Point lastCapture = decider.getLastCaptureDestination();
+            if (lastCapture != null) {
+                multipleCaptures(lastCapture);
+            }
         }
 
         else {
@@ -67,7 +75,9 @@ public class AlquerqueController extends Controller {
                 // End the game if a user enter 'stop'
                 if (line.equals("stop")) {
                     System.out.println("");
+                    stopStage(); // sets isEndStage() = true, stops the main loop
                     endGame();
+                    ok = true; // exit the input loop
                 }
                 else {
                     ok = analyseAndPlay(line);
@@ -84,7 +94,7 @@ public class AlquerqueController extends Controller {
         model.setNextPlayer();
         AlquerqueStageModel stage = (AlquerqueStageModel) model.getGameStage();
 
-        // increment of the turns when a the white player plays
+        // increment of the turns when the white player plays
         if (model.getIdPlayer() == 0)
             stage.incrementCount();
 
@@ -206,8 +216,7 @@ public class AlquerqueController extends Controller {
     /**
      * Recapture automaticly if is it possible from the registered position on param for the current player
      */
-
-    private void multipleCaptures(Point point) {
+    public void multipleCaptures(Point point) {
         AlquerqueStageModel stage = (AlquerqueStageModel) model.getGameStage();
         AlquerqueBoard board = stage.getBoard();
 
