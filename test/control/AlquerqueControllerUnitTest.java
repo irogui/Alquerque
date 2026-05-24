@@ -6,6 +6,7 @@ import org.mockito.Mockito;
 public class AlquerqueControllerUnitTest {
     @Test
     public void testAlquerqueController() {
+        /*Make sure to remove the keyword "private" from the concerned methods for the tests to occur.*/
         AlquerqueController alqCont = Mockito.mock(AlquerqueController.class);
         Mockito.when(alqCont.analyseAndPlay(null)).thenReturn(false);
         Mockito.when(alqCont.analyseAndPlay("test")).thenReturn(false);
