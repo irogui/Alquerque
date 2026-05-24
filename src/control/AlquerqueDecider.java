@@ -99,7 +99,7 @@ public class AlquerqueDecider extends Decider {
     }
 
 
-    // HEURISTIC mode:
+    // HEURISTIC mode
     private ActionList decideHeuristic(AlquerqueStageModel stage, AlquerqueBoard board, int color) {
         List<int[]> moves = collectAllMoves(board, stage, color);
         if (moves.isEmpty())

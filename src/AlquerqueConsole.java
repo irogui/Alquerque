@@ -6,6 +6,10 @@ import boardifier.view.View;
 import control.AlquerqueController;
 import control.AlquerqueDecider;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.util.Scanner;
+
 public class AlquerqueConsole {
 
     public static void main(String[] args) {
@@ -25,6 +29,17 @@ public class AlquerqueConsole {
                 iaMode = Integer.parseInt(args[1]);
                 if (iaMode < 0 || iaMode > 2) iaMode = AlquerqueDecider.MODE_RANDOM;
             } catch (NumberFormatException e) { iaMode = AlquerqueDecider.MODE_RANDOM; }
+        }
+
+        Scanner inputScanner = null;
+
+        if (args.length >= 3) {
+            try {
+                inputScanner = new Scanner(new File(args[2]));
+                System.out.println("File mod: " + args[2]);
+            } catch (FileNotFoundException e) {
+                System.err.println("File not found");
+            }
         }
 
         String modeLabel;
@@ -62,7 +77,7 @@ public class AlquerqueConsole {
 
         // Create the View and the Controller
         View view = new View(model);
-        AlquerqueController controller = new AlquerqueController(model, view, iaMode);
+        AlquerqueController controller = new AlquerqueController(model, view, iaMode, inputScanner);
 
 
         controller.setFirstStageName("alquerque");

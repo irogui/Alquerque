@@ -14,10 +14,12 @@ public class AlquerqueController extends Controller {
 
     private Scanner scanner;
     private final int iaMode;
+    private Scanner fileScanner;
 
-    public AlquerqueController(Model model, View view, int iaMode) {
+    public AlquerqueController(Model model, View view, int iaMode, Scanner fileScanner) {
         super(model, view);
         this.iaMode = iaMode;
+        this.fileScanner = fileScanner;
     }
 
     @Override
@@ -25,6 +27,7 @@ public class AlquerqueController extends Controller {
         // The BufferedReader didn't work so we moved to the classic scanner
         scanner = new Scanner(System.in);
         update();
+
         while (!model.isEndStage()) {
             playTurn();
             endOfTurn();
@@ -52,7 +55,16 @@ public class AlquerqueController extends Controller {
                 e.printStackTrace();
             }
 
-            AlquerqueDecider decider = new AlquerqueDecider(model, this, iaMode);
+            int currentIaMode;
+            if (model.getIdPlayer() == 0) {
+                currentIaMode = iaMode;
+            }
+            else {
+                currentIaMode = AlquerqueDecider.MODE_RANDOM;
+            }
+
+            AlquerqueDecider decider = new AlquerqueDecider(model, this, currentIaMode);
+
             ActionPlayer play = new ActionPlayer(model, this, decider, null);
             play.start();
 
@@ -70,7 +82,24 @@ public class AlquerqueController extends Controller {
 
 
                 System.out.print(">");
-                String line = scanner.nextLine();
+                String line;
+
+                if (fileScanner != null) {
+
+                    if (fileScanner.hasNextLine()) {
+                        line = fileScanner.nextLine().trim();
+                        System.out.println("> " + line);
+                    }
+                    else {
+                        System.out.println("End of file.");
+                        stopStage();
+                        return;
+                    }
+
+                }
+                else {
+                    line = scanner.nextLine().trim();
+                }
 
                 // End the game if a user enter 'stop'
                 if (line.equals("stop")) {
