@@ -1,20 +1,47 @@
 package control;
 
+import boardifier.model.Model;
+import boardifier.model.TextElement;
+import boardifier.view.View;
+import model.AlquerqueStageModel;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 
-public class AlquerqueControllerUnitTest {
+import java.util.Scanner;
+
+import static org.mockito.Mockito.*;
+
+class AlquerqueControllerUnitTest {
+
+    private Model model;
+    private View view;
+    private AlquerqueStageModel stage;
+    private TextElement playerName;
+    private AlquerqueController controller;
+
+    @BeforeEach
+    void setUp() {
+        model = mock(Model.class);
+        view = mock(View.class);
+        stage = mock(AlquerqueStageModel.class);
+        playerName = mock(TextElement.class);
+
+        when(model.getGameStage()).thenReturn(stage);
+        when(stage.getPlayerName()).thenReturn(playerName);
+
+        controller = new AlquerqueController(model, view, 0, new Scanner(""));
+    }
+
     @Test
-    public void testAlquerqueController() {
-        /*Make sure to remove the keyword "private" from the concerned methods for the tests to occur.*/
-        AlquerqueController alqCont = Mockito.mock(AlquerqueController.class);
-        Mockito.when(alqCont.analyseAndPlay(null)).thenReturn(false);
-        Mockito.when(alqCont.analyseAndPlay("test")).thenReturn(false);
-        Mockito.when(alqCont.analyseAndPlay("luigi")).thenReturn(false);
-        Mockito.when(alqCont.analyseAndPlay("B6-B5")).thenReturn(false);
-        Mockito.when(alqCont.analyseAndPlay("A1-A0")).thenReturn(false);
-        Mockito.when(alqCont.analyseAndPlay("D4-C3")).thenReturn(true);
+    void endOfTurnTest() {
+        /*Getting player id and name, end its turn, and check if the next player is set.*/
+        when(model.getIdPlayer()).thenReturn(1);
+        when(model.getCurrentPlayerName()).thenReturn("Black");
 
-        /*Mockito.when(alqCont.hasAnyCapture(null, 1)).thenReturn(false);*/
+        controller.endOfTurn();
+
+        verify(model).setNextPlayer();
+        verify(stage, never()).incrementCount();
+        verify(playerName).setText("Black");
     }
 }
