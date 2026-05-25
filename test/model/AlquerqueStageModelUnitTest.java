@@ -90,4 +90,104 @@ class AlquerqueStageModelUnitTest {
         
         assertInstanceOf(AlquerqueStageFactory.class, factory);
     }
+
+    @Test
+    void removeInvisibleWhitePawnTest() {
+        Model model = mock(Model.class);
+        AlquerqueStageModel stage = new AlquerqueStageModel("stage", model);
+
+        AlquerqueBoard board = mock(AlquerqueBoard.class);
+        stage.setBoard(board);
+
+        Pawn whitePawn = mock(Pawn.class);
+        when(whitePawn.isVisible()).thenReturn(false);
+        when(whitePawn.getColor()).thenReturn(Pawn.PAWN_WHITE);
+
+        stage.removedFromContainer(whitePawn, board, 0, 0);
+
+        assertEquals(11, stage.getWhitePawnsLeft());
+        assertEquals(12, stage.getBlackPawnsLeft());
+        verify(model, never()).stopStage();
+    }
+
+    @Test
+    void removeInvisibleBlackPawnTest() {
+        Model model = mock(Model.class);
+        AlquerqueStageModel stage = new AlquerqueStageModel("stage", model);
+
+        AlquerqueBoard board = mock(AlquerqueBoard.class);
+        stage.setBoard(board);
+
+        Pawn blackPawn = mock(Pawn.class);
+        when(blackPawn.isVisible()).thenReturn(false);
+        when(blackPawn.getColor()).thenReturn(Pawn.PAWN_BLACK);
+
+        stage.removedFromContainer(blackPawn, board, 0, 0);
+
+        assertEquals(12, stage.getWhitePawnsLeft());
+        assertEquals(11, stage.getBlackPawnsLeft());
+        verify(model, never()).stopStage();
+    }
+
+    @Test
+    void removeVisiblePawnFailTest() {
+        Model model = mock(Model.class);
+        AlquerqueStageModel stage = new AlquerqueStageModel("stage", model);
+
+        AlquerqueBoard board = mock(AlquerqueBoard.class);
+        stage.setBoard(board);
+
+        Pawn pawn = mock(Pawn.class);
+        when(pawn.isVisible()).thenReturn(true);
+        when(pawn.getColor()).thenReturn(Pawn.PAWN_WHITE);
+
+        stage.removedFromContainer(pawn, board, 0, 0);
+
+        assertEquals(12, stage.getWhitePawnsLeft());
+        assertEquals(12, stage.getBlackPawnsLeft());
+        verify(pawn, never()).getColor();
+        verify(model, never()).stopStage();
+    }
+
+    @Test
+    void captureAllWhitePawnsBlackWinsTest() {
+        Model model = mock(Model.class);
+        AlquerqueStageModel stage = new AlquerqueStageModel("stage", model);
+
+        AlquerqueBoard board = mock(AlquerqueBoard.class);
+        stage.setBoard(board);
+
+        Pawn whitePawn = mock(Pawn.class);
+        when(whitePawn.isVisible()).thenReturn(false);
+        when(whitePawn.getColor()).thenReturn(Pawn.PAWN_WHITE);
+
+        for (int i = 0; i < 12; i++) {
+            stage.removedFromContainer(whitePawn, board, 0, 0);
+        }
+
+        assertEquals(0, stage.getWhitePawnsLeft());
+        verify(model).setIdWinner(1);
+        verify(model).stopStage();
+    }
+
+    @Test
+    void captureAllBlackPawnsWhiteWinsTest() {
+        Model model = mock(Model.class);
+        AlquerqueStageModel stage = new AlquerqueStageModel("stage", model);
+
+        AlquerqueBoard board = mock(AlquerqueBoard.class);
+        stage.setBoard(board);
+
+        Pawn blackPawn = mock(Pawn.class);
+        when(blackPawn.isVisible()).thenReturn(false);
+        when(blackPawn.getColor()).thenReturn(Pawn.PAWN_BLACK);
+
+        for (int i = 0; i < 12; i++) {
+            stage.removedFromContainer(blackPawn, board, 0, 0);
+        }
+
+        assertEquals(0, stage.getBlackPawnsLeft());
+        verify(model).setIdWinner(0);
+        verify(model).stopStage();
+    }
 }
