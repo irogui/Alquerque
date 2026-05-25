@@ -13,12 +13,16 @@ import java.util.Scanner;
 public class AlquerqueController extends Controller {
 
     private Scanner scanner;
-    private final int iaMode;
     private Scanner fileScanner;
+    private final int whiteIaMode;
+    private final int blackIaMode;
 
-    public AlquerqueController(Model model, View view, int iaMode, Scanner fileScanner) {
+
+    public AlquerqueController(Model model, View view, int whiteIaMode, int blackIaMode, Scanner fileScanner) {
         super(model, view);
-        this.iaMode = iaMode;
+
+        this.whiteIaMode = whiteIaMode;
+        this.blackIaMode = blackIaMode;
         this.fileScanner = fileScanner;
     }
 
@@ -56,11 +60,12 @@ public class AlquerqueController extends Controller {
             }
 
             int currentIaMode;
+
             if (model.getIdPlayer() == 0) {
-                currentIaMode = iaMode;
+                currentIaMode = whiteIaMode;
             }
             else {
-                currentIaMode = AlquerqueDecider.MODE_RANDOM;
+                currentIaMode = blackIaMode;
             }
 
             AlquerqueDecider decider = new AlquerqueDecider(model, this, currentIaMode);
@@ -80,22 +85,20 @@ public class AlquerqueController extends Controller {
 
             while (!ok) {
 
-
                 System.out.print(">");
+
+                // File scanner
                 String line;
-
                 if (fileScanner != null) {
-
                     if (fileScanner.hasNextLine()) {
                         line = fileScanner.nextLine().trim();
-                        System.out.println("> " + line);
+                        System.out.println(line);
                     }
                     else {
                         System.out.println("End of file.");
                         stopStage();
                         return;
                     }
-
                 }
                 else {
                     line = scanner.nextLine().trim();

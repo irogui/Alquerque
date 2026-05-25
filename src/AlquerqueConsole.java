@@ -1,7 +1,6 @@
 import boardifier.control.StageFactory;
 import boardifier.model.GameException;
 import boardifier.model.Model;
-import boardifier.model.Player;
 import boardifier.view.View;
 import control.AlquerqueController;
 import control.AlquerqueDecider;
@@ -14,48 +13,94 @@ public class AlquerqueConsole {
 
     public static void main(String[] args) {
 
-        int mode   = 0;
-        int iaMode = AlquerqueDecider.MODE_RANDOM;
+        int mode = 0;
+        // Default mods for White and Black IA
+        int whiteIaMode = AlquerqueDecider.MODE_RANDOM;
+        int blackIaMode = AlquerqueDecider.MODE_RANDOM;
 
         if (args.length >= 1) {
             try {
                 mode = Integer.parseInt(args[0]);
-                if (mode < 0 || mode > 2) mode = 0;
-            } catch (NumberFormatException e) { mode = 0; }
+                if (mode < 0 || mode > 3)
+                    mode = 0;
+            }
+            catch (NumberFormatException e) { mode = 0; }
         }
 
-        if (args.length >= 2) {
+        if (args.length >= 2 && mode != 3) {
             try {
-                iaMode = Integer.parseInt(args[1]);
-                if (iaMode < 0 || iaMode > 2) iaMode = AlquerqueDecider.MODE_RANDOM;
-            } catch (NumberFormatException e) { iaMode = AlquerqueDecider.MODE_RANDOM; }
-        }
+                // Mode IA vs IA
+                if (mode == 2) {
+                    String iaModes = args[1];
+                    if (iaModes.length() == 2) {
+                        whiteIaMode = Character.getNumericValue(iaModes.charAt(0));
+                        blackIaMode = Character.getNumericValue(iaModes.charAt(1));
 
-        Scanner inputScanner = null;
+                        if (whiteIaMode < 0 || whiteIaMode > 2)
+                            whiteIaMode = AlquerqueDecider.MODE_RANDOM;
 
-        if (args.length >= 3) {
-            try {
-                inputScanner = new Scanner(new File(args[2]));
-                System.out.println("File mod: " + args[2]);
-            } catch (FileNotFoundException e) {
-                System.err.println("File not found");
+                        if (blackIaMode < 0 || blackIaMode > 2)
+                            blackIaMode = AlquerqueDecider.MODE_RANDOM;
+                    }
+                }
+                // Mode Human vs IA
+                else {
+                    int iaMode = Integer.parseInt(args[1]);
+                    if (iaMode < 0 || iaMode > 2)
+                        iaMode = AlquerqueDecider.MODE_RANDOM;
+                    blackIaMode = iaMode;
+                }
+            }
+            catch (NumberFormatException e) {
+                whiteIaMode = AlquerqueDecider.MODE_RANDOM;
+                blackIaMode = AlquerqueDecider.MODE_RANDOM;
             }
         }
 
-        String modeLabel;
-        switch (iaMode) {
-            case AlquerqueDecider.MODE_HEURISTIC: modeLabel = "Heuristic"; break;
-            case AlquerqueDecider.MODE_MINIMAX:   modeLabel = "Minimax"; break;
-            default:                              modeLabel = "Random";
+        Scanner inputScanner = null;
+        if (mode == 3) {
+            if (args.length >= 2) {
+                try {
+                    inputScanner = new Scanner(new File(args[1]));
+                    System.out.println("File mode: " + args[1]);
+                }
+                catch (FileNotFoundException e) {
+                    System.err.println("File not found");
+                    return;
+                }
+            }
         }
-        if (mode != 0)
-            System.out.println("Mode IA : " + modeLabel);
+
+        // Show's AI's selected mods
+        if (mode != 0) {
+            String whiteLabel;
+            switch (whiteIaMode) {
+                case AlquerqueDecider.MODE_HEURISTIC: whiteLabel = "Heuristic"; break;
+                case AlquerqueDecider.MODE_MINIMAX:   whiteLabel = "Minimax"; break;
+                default:                              whiteLabel = "Random";
+            }
+
+            String blackLabel;
+            switch (blackIaMode) {
+                case AlquerqueDecider.MODE_HEURISTIC: blackLabel = "Heuristic"; break;
+                case AlquerqueDecider.MODE_MINIMAX:   blackLabel = "Minimax"; break;
+                default:                              blackLabel = "Random";
+            }
+
+            if (mode == 1)
+                System.out.println("Mode IA Black : " + blackLabel);
+
+            if (mode == 2) {
+                System.out.println("Mode IA White : " + whiteLabel);
+                System.out.println("Mode IA Black  : " + blackLabel);
+            }
+        }
 
         // Create the modek
         Model model = new Model();
 
         // Add the players
-        if (mode == 0) {
+        if (mode == 0 || mode == 3) {
             model.addHumanPlayer("WHITE");
             model.addHumanPlayer("BLACK");
         }
@@ -77,7 +122,7 @@ public class AlquerqueConsole {
 
         // Create the View and the Controller
         View view = new View(model);
-        AlquerqueController controller = new AlquerqueController(model, view, iaMode, inputScanner);
+        AlquerqueController controller = new AlquerqueController(model, view, whiteIaMode, blackIaMode, inputScanner);
 
 
         controller.setFirstStageName("alquerque");

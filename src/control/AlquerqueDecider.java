@@ -62,9 +62,11 @@ public class AlquerqueDecider extends Decider {
 
     // Random mode: we still have it because it's defined as a noob level
     private ActionList decideRandom(AlquerqueStageModel stage, AlquerqueBoard board, int color) {
+        // get all player's pawns
         Pawn[] myPawns = getPawns(stage, color);
         List<int[]> captureOptions = new ArrayList<>();
 
+        // get all pawns's captures and add them in captureOptions
         for (Pawn p : myPawns) {
             if (p.isVisible()) {
                 int[] cell = board.getElementCell(p);
@@ -75,11 +77,13 @@ public class AlquerqueDecider extends Decider {
             }
         }
 
+        // if there are one or many captures chose one randomly
         if (!captureOptions.isEmpty()) {
             int[] choice = captureOptions.get(rng.nextInt(captureOptions.size()));
             return buildCapture(board, choice[0], choice[1], choice[2], choice[3]);
         }
 
+        // Else do the same but with the simple moves
         List<int[]> moveOptions = new ArrayList<>();
         for (Pawn p : myPawns) {
             if (p.isVisible()) {
@@ -91,6 +95,7 @@ public class AlquerqueDecider extends Decider {
             }
         }
 
+        
         if (moveOptions.isEmpty())
             return forfeit();
 
