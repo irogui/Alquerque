@@ -33,7 +33,7 @@ class AlquerqueControllerUnitTest {
     }
 
     @Test
-    void endOfTurnTest() {
+    void endOfTurnNextBlackTest() {
         /*Getting player id and name, end its turn, and check if the next player is set.*/
         when(model.getIdPlayer()).thenReturn(1);
         when(model.getCurrentPlayerName()).thenReturn("Black");
@@ -41,7 +41,21 @@ class AlquerqueControllerUnitTest {
         controller.endOfTurn();
 
         verify(model).setNextPlayer();
+        verify(model).getCurrentPlayerName();
         verify(stage, never()).incrementCount();
         verify(playerName).setText("Black");
+    }
+
+    @Test
+    void endOfTurnNextWhiteTest() {
+        when(model.getIdPlayer()).thenReturn(0);
+        when(model.getCurrentPlayerName()).thenReturn("White");
+
+        controller.endOfTurn();
+
+        verify(model).setNextPlayer();
+        verify(model).getCurrentPlayerName();
+        verify(stage).incrementCount();
+        verify(playerName).setText("White");
     }
 }
