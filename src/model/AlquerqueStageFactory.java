@@ -4,6 +4,13 @@ import boardifier.model.GameStageModel;
 import boardifier.model.StageElementsFactory;
 import boardifier.model.TextElement;
 
+
+/**
+ * Factory responsible for building the initial state of an Alquerque game stage.
+ * Creates the 5x5 board, instantiates the 12 white and 12 black pawns, and places them
+ * in their standard starting positions. Also adds a text element to display the current player's name.
+ */
+
 public class AlquerqueStageFactory extends StageElementsFactory {
 
     private AlquerqueStageModel stageModel;

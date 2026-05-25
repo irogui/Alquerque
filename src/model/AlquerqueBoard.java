@@ -6,6 +6,12 @@ import java.awt.Point;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Represents the 5x5 Alquerque game board.
+ * Handles movement rules: cells on even-sum coordinates allow 8 directions (orthogonal + diagonal) and for the
+ * others only 4 dirs. Provides methods to compute valid simple moves and capture moves for a pawn,.
+ */
+
 public class AlquerqueBoard extends ContainerElement {
 
     /*

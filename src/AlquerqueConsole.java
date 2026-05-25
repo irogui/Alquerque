@@ -9,6 +9,22 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.Scanner;
 
+
+/**
+ * Entry point of the game.
+ * Reads command-line arguments to choose the game mode: Human vs Human / Human vs AI / AI vs AI / or file input mode.
+ * Set up the AI difficulty (Random, Heuristic, or Minimax) for each player, then creates the Model, View
+ * and Controller to starts the game loop.
+
+ *
+ * Exemples:
+ *
+ * java -cp out AlquerqueConsole 0
+ * java -cp out AlquerqueConsole 2 20
+ * java -cp out AlquerqueConsole 1 1
+ * java -cp out AlquerqueConsole 3 moves.txt
+ */
+
 public class AlquerqueConsole {
 
     public static void main(String[] args) {

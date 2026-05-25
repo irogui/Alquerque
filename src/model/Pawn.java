@@ -9,6 +9,7 @@ import boardifier.model.GameStageModel;
  * A basic pawn element, with only one fixed parameter : color
  * There are no setters because the state of a pawn is fixed.
  */
+
 public class Pawn extends GameElement {
 
     // Two colors of pawns

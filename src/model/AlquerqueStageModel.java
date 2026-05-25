@@ -2,6 +2,14 @@ package model;
 
 import boardifier.model.*;
 
+
+/**
+ * Holds the complete state of an Alquerque game stage.
+ * Stores the board, the two arrays of pawns, pawn counts, and the turn counter.
+ * Registers a callback that is called whenever a pawn is removed from the board to update
+ * the pawn count and check if the game is over.
+ */
+
 public class AlquerqueStageModel extends GameStageModel {
 
     // Elements

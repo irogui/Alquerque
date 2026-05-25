@@ -10,6 +10,15 @@ import java.awt.Point;
 import java.util.List;
 import java.util.Scanner;
 
+
+/**
+ * Main controller for the Alquerque game, handling the game loop and player input.
+ * For human players, it reads moves from the console (or a file in replay mode), validates them,
+ * and enforces game rules such as mandatory captures. For computer players, it delegates move selection
+ * to AlquerqueDecider. It also handles chained captures (multiple jumps in a single turn) but not with the choice
+ * it's done automatically.
+ */
+
 public class AlquerqueController extends Controller {
 
     private Scanner scanner;
@@ -221,9 +230,8 @@ public class AlquerqueController extends Controller {
         return true;
     }
 
-    /**
-     * Return true if the player as at least a captur to make
-     */
+
+    // Return true if the player as at least a captur to make
     private boolean hasAnyCapture(AlquerqueStageModel stage, int color) {
         AlquerqueBoard board = stage.getBoard();
 
@@ -245,9 +253,8 @@ public class AlquerqueController extends Controller {
         return false;
     }
 
-    /**
-     * Recapture automaticly if is it possible from the registered position on param for the current player
-     */
+
+    // Recapture automaticly if is it possible from the registered position on param for the current player
     public void multipleCaptures(Point point) {
         AlquerqueStageModel stage = (AlquerqueStageModel) model.getGameStage();
         AlquerqueBoard board = stage.getBoard();

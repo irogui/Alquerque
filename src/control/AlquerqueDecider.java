@@ -8,6 +8,14 @@ import model.*;
 import java.awt.Point;
 import java.util.*;
 
+/**
+ * AI decision-maker for the game, supporting three difficulty levels.
+ * In Random mode, it picks any legal move at random. In Heuristic mode, it simulates all moves
+ * and scores them based on pawn count, mobility, and available captures. In Minimax mode, it uses
+ * alpha-beta pruning to search several moves ahead and choose the best one. All three modes enforce
+ * the mandatory-capture rule.
+ */
+
 public class AlquerqueDecider extends Decider {
 
     public static final int MODE_RANDOM    = 0;
@@ -28,6 +36,9 @@ public class AlquerqueDecider extends Decider {
     private static final int[][] ORTHO_DIRS = {
             {-1,0},{1,0},{0,1},{0,-1}
     };
+
+    // We use it to do make the matrix of the board: -1 = empty, 0 = PAWN_WHITE, 1 = PAWN_BLACK
+    private static final int EMPTY = -1;
 
     private static final Random rng = new Random();
     private final int aiMode;
@@ -95,7 +106,7 @@ public class AlquerqueDecider extends Decider {
             }
         }
 
-        
+        // We never saw it but according to the rules a player have to forfeit if he doesn't have any moves
         if (moveOptions.isEmpty())
             return forfeit();
 
@@ -112,13 +123,13 @@ public class AlquerqueDecider extends Decider {
 
         // We create a matrix to copy the current board and apply the moves on it
         int[][] snapshot = boardSnapshot(board);
-
         int bestScore = Integer.MIN_VALUE;;
         List<int[]> bestMoves = new ArrayList<>();
 
+        // For each moves we apply a move and evalute the new board
         for (int[] m : moves) {
-            int[][] sim = applyMove(snapshot, m[0], m[1], m[2], m[3], color);
-            int score = evaluate(sim, color);
+            int[][] simulation = applyMove(snapshot, m[0], m[1], m[2], m[3], color);
+            int score = evaluate(simulation, color);
 
             if (score > bestScore) {
                 bestScore = score;
@@ -136,7 +147,7 @@ public class AlquerqueDecider extends Decider {
 
     // MINIMAX mod
     private ActionList decideMinimax(AlquerqueStageModel stage, AlquerqueBoard board, int color) {
-        int[][] snapshot = boardSnapshot(board);
+        int[][] simulation = boardSnapshot(board);
 
         int opponent;
         if (color == Pawn.PAWN_WHITE)
@@ -144,7 +155,9 @@ public class AlquerqueDecider extends Decider {
         else
             opponent = Pawn.PAWN_WHITE;
 
-        List<int[]> moves = collectAllMovesOnSnapshot(snapshot, color);
+        List<int[]> moves = collectAllMoves(simulation, color);
+
+        // If there are no moves, the IA forfeit()
         if (moves.isEmpty())
             return forfeit();
 
@@ -152,7 +165,7 @@ public class AlquerqueDecider extends Decider {
         List<int[]> bestMoves = new ArrayList<>();
 
         for (int[] m : moves) {
-            int[][] child = applyMove(snapshot, m[0], m[1], m[2], m[3], color);
+            int[][] child = applyMove(simulation, m[0], m[1], m[2], m[3], color);
 
             int score = minimaxAB(child, MINIMAX_DEPTH - 1, false, color, opponent, 0, Integer.MAX_VALUE); // Integer.MAX_VALUE sert à prendre la valeur max possible d'un int
 
@@ -178,12 +191,12 @@ public class AlquerqueDecider extends Decider {
         else
             opponent = Pawn.PAWN_WHITE;
 
-        // End condition
+        // end the recursion if the max depath has been reached or if the game is finished
         if (depth == 0 || isTerminal(board)) {
             return evaluate(board, aiColor);
         }
 
-        List<int[]> moves = collectAllMovesOnSnapshot(board, currentColor);
+        List<int[]> moves = collectAllMoves(board, currentColor);
 
         if (maximizing) {
             int maxEval = Integer.MIN_VALUE;;
@@ -214,7 +227,7 @@ public class AlquerqueDecider extends Decider {
     }
 
 
-    // Evaluation function for the heuristic method
+    // Evaluation function: Receive a board and calcul the score according to all the options(pawn advantage, mobility, captures,...) of the IA
     private int evaluate(int[][] board, int myColor) {
         int opponent;
         if (myColor == Pawn.PAWN_WHITE)
@@ -231,14 +244,14 @@ public class AlquerqueDecider extends Decider {
             for (int c = 0; c < 5; c++) {
                 int cell = board[r][c];
 
-                if (cell == myColor) {
+                if (cell == myColor)
                     myCount++;
-                }
-                else if (cell == opponent) {
+                else if (cell == opponent)
                     oppCount++;
-                }
             }
         }
+
+        // add to the score the difference of the pawns number between the 2 players and multiplied by the num pawns advantage score
         score += (myCount - oppCount) * W_PAWNS;
 
         // Criteria 2, 3 and 4: mobility, captures and multiples captures
@@ -248,15 +261,16 @@ public class AlquerqueDecider extends Decider {
         for (int r = 0; r < 5; r++) {
             for (int c = 0; c < 5; c++) {
                 int cell = board[r][c];
+
                 if (cell == myColor) {
-                    List<int[]> caps = getCapturesOnSnapshot(board, r, c, myColor);
-                    myCaptures += caps.size();
-                    myMoves += getSimpleMovesOnSnapshot(board, r, c).size();
+                    List<int[]> captures = getCaptures(board, r, c, myColor);
+                    myCaptures += captures.size();
+                    myMoves += getSimpleMoves(board, r, c).size();
                 }
                 else if (cell == opponent) {
-                    List<int[]> caps = getCapturesOnSnapshot(board, r, c, opponent);
-                    oppCaptures += caps.size();
-                    oppMoves += getSimpleMovesOnSnapshot(board, r, c).size();
+                    List<int[]> captures = getCaptures(board, r, c, opponent);
+                    oppCaptures += captures.size();
+                    oppMoves += getSimpleMoves(board, r, c).size();
                 }
             }
         }
@@ -269,10 +283,6 @@ public class AlquerqueDecider extends Decider {
 
         return score;
     }
-
-
-    // -1 = empty, 0 = PAWN_WHITE, 1 = PAWN_BLACK
-    private static final int EMPTY = -1;
 
 
     // Make a matrix from the current board
@@ -291,22 +301,24 @@ public class AlquerqueDecider extends Decider {
         return snap;
     }
 
-    // Apply a move on a snapshot
-    private int[][] applyMove(int[][] src, int srcR, int srcC, int dstR, int dstC, int color) {
-        int[][] dst = new int[5][5];
-        for (int i = 0; i < 5; i++) dst[i] = src[i].clone();
+    // Apply a move on a board and the return the new one
+    private int[][] applyMove(int[][] board, int srcR, int srcC, int dstR, int dstC, int color) {
+        int[][] simulation = new int[5][5];
 
-        dst[dstR][dstC] = color;
-        dst[srcR][srcC] = EMPTY;
+        for (int i = 0; i < 5; i++)
+            simulation[i] = board[i].clone();
+
+        simulation[dstR][dstC] = color;
+        simulation[srcR][srcC] = EMPTY;
 
         // delete the pawn of the middle cell
         int dr = dstR - srcR;
         int dc = dstC - srcC;
-        if (Math.abs(dr) == 2 || Math.abs(dc) == 2) {
-            dst[srcR + dr / 2][srcC + dc / 2] = EMPTY;
-        }
 
-        return dst;
+        if (Math.abs(dr) == 2 || Math.abs(dc) == 2)
+            simulation[srcR + dr / 2][srcC + dc / 2] = EMPTY;
+
+        return simulation;
     }
 
     // Verify the game's end
@@ -327,50 +339,53 @@ public class AlquerqueDecider extends Decider {
     }
 
     // Return the available directions depending on the cell's coordinates
-    private int[][] getDirsOnSnapshot(int r, int c) {
+    private int[][] getDirs(int r, int c) {
         if ((r + c) % 2 == 0)
             return ALL_DIRS;
         else
             return ORTHO_DIRS;
     }
 
-    // Test a simple move on a snapshot
-    private List<int[]> getSimpleMovesOnSnapshot(int[][] board, int r, int c) {
+    // Test a simple move on a noard
+    private List<int[]> getSimpleMoves(int[][] board, int r, int c) {
         List<int[]> list = new ArrayList<>();
-        for (int[] d : getDirsOnSnapshot(r, c)) {
+
+        for (int[] d : getDirs(r, c)) {
             int nr = r + d[0], nc = c + d[1];
+
             if (inBounds(nr, nc) && board[nr][nc] == EMPTY)
                 list.add(new int[]{nr, nc});
         }
+
         return list;
     }
 
-    // Test captures on a snapshot
-    private List<int[]> getCapturesOnSnapshot(int[][] board, int r, int c, int color) {
+    // Test captures on a board
+    private List<int[]> getCaptures(int[][] board, int r, int c, int color) {
         List<int[]> list = new ArrayList<>();
-        for (int[] d : getDirsOnSnapshot(r, c)) {
+
+        for (int[] d : getDirs(r, c)) {
             int mr = r + d[0], mc = c + d[1];
             int dr = r + d[0]*2, dc = c + d[1]*2;
-            if (inBounds(dr, dc)
-                    && board[mr][mc] != EMPTY && board[mr][mc] != color
-                    && board[dr][dc] == EMPTY)
+
+            if ((inBounds(dr, dc)) && (board[mr][mc] != EMPTY) && (board[mr][mc] != color && board[dr][dc] == EMPTY))
                 list.add(new int[]{dr, dc});
         }
         return list;
     }
 
-    // Collect all available moves of the current player
-    private List<int[]> collectAllMovesOnSnapshot(int[][] board, int color) {
+    // Collect all available moves of the current player (FOR THE SNAPSHOTS)
+    private List<int[]> collectAllMoves(int[][] board, int color) {
         List<int[]> captures = new ArrayList<>();
         List<int[]> simple   = new ArrayList<>();
 
         for (int r = 0; r < 5; r++) {
             for (int c = 0; c < 5; c++) {
                 if (board[r][c] == color) {
-                    for (int[] dst : getCapturesOnSnapshot(board, r, c, color))
+                    for (int[] dst : getCaptures(board, r, c, color))
                         captures.add(new int[]{r, c, dst[0], dst[1]});
                     if (captures.isEmpty())
-                        for (int[] dst : getSimpleMovesOnSnapshot(board, r, c))
+                        for (int[] dst : getSimpleMoves(board, r, c))
                             simple.add(new int[]{r, c, dst[0], dst[1]});
                 }
             }
@@ -382,7 +397,7 @@ public class AlquerqueDecider extends Decider {
         return simple;
     }
 
-    // Collect all the possible moves of a player
+    // Collect all the possible moves of a player, but if there is at least one capture, it returns only the captures
     private List<int[]> collectAllMoves(AlquerqueBoard board, AlquerqueStageModel stage, int color) {
         Pawn[] pawns = getPawns(stage, color);
 
