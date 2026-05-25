@@ -29,7 +29,7 @@ class AlquerqueControllerUnitTest {
         when(model.getGameStage()).thenReturn(stage);
         when(stage.getPlayerName()).thenReturn(playerName);
 
-        controller = new AlquerqueController(model, view, 0, new Scanner(""));
+        controller = new AlquerqueController(model, view, 0, 0, new Scanner(""));
     }
 
     @Test
