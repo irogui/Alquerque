@@ -12,7 +12,12 @@ import java.util.Scanner;
 
 /**
  * Entry point of the game.
- * Reads command-line arguments to choose the game mode: Human vs Human / Human vs AI / AI vs AI / or file input mode.
+ * Reads command-line arguments to choose the game mode:
+ * 0: Human vs Human
+ * 1: Human vs AI
+ * 2: AI vs AI
+ * 3: file input mode
+ *
  * Set up the AI difficulty (Random, Heuristic, or Minimax) for each player, then creates the Model, View
  * and Controller to starts the game loop.
 

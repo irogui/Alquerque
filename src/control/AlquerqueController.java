@@ -194,7 +194,7 @@ public class AlquerqueController extends Controller {
 
         // If a capture is available but the player didn't noticed it
         if (captureAvailable && !isCapture) {
-            System.out.println("First you have to captur a pawn...");
+            System.out.println("First you have to capture a pawn...");
             return false;
         }
 
