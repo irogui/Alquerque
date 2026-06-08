@@ -23,4 +23,6 @@ public class PawnLook extends ElementLook {
             shape[0][0] = ConsoleColor.BLACK_BACKGROUND + ConsoleColor.BLACK + "@" + ConsoleColor.RESET;
         }
     }
+
+
 }

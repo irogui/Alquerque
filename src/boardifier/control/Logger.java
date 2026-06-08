@@ -71,6 +71,6 @@ public class Logger {
             s = st[3] + " - "+s;
             if (caller != null) s = "["+caller+"] -> "+s;
         }
-        System.out.println("");
+        System.out.println(s);
     }
 }
