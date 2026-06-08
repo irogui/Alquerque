@@ -23,6 +23,8 @@ public class AlquerqueStageModel extends GameStageModel {
 
     private int count = 1;
 
+    private int turnsWithoutCapture = 0;
+
     public AlquerqueStageModel(String name, Model model) {
         super(name, model);
         setupCallbacks();
@@ -64,6 +66,17 @@ public class AlquerqueStageModel extends GameStageModel {
         this.count ++;
     }
 
+    public int getTurnsWithoutCapture() { return turnsWithoutCapture; }
+
+    public void registerCaptureMade(boolean captureMade) {
+        if (captureMade) {
+            turnsWithoutCapture = 0;
+        }
+        else {
+            turnsWithoutCapture ++;
+        }
+        checkEndOfGame();
+    }
 
 
     private void setupCallbacks() {
@@ -93,13 +106,28 @@ public class AlquerqueStageModel extends GameStageModel {
 
     private void checkEndOfGame() {
         if (whitePawnsLeft == 0) {
-            model.setIdWinner(1); // White 0 wins
+            model.setIdWinner(1);
             model.stopStage();
         }
         else if (blackPawnsLeft == 0) {
-            model.setIdWinner(0); // Black 1 wins
+            model.setIdWinner(0);
             model.stopStage();
         }
+        else if (turnsWithoutCapture >= 20) {
+            model.setIdWinner(-1);
+            model.stopStage();
+            System.out.println("20 tours sans prise : égalité !");
+        }
+    }
+
+    public void checkPlayerBlocked(int currentPlayerId) {
+        if (currentPlayerId == 0) {
+            model.setIdWinner(1);
+        }
+        else {
+            model.setIdWinner(0);
+        }
+        model.stopStage();
     }
 
     @Override

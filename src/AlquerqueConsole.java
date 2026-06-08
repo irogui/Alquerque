@@ -22,7 +22,7 @@ import java.util.Scanner;
  * and Controller to starts the game loop.
 
  *
- * Exemples:
+ * Examples:
  *
  * java -cp out AlquerqueConsole 0
  * java -cp out AlquerqueConsole 2 20
@@ -152,7 +152,7 @@ public class AlquerqueConsole {
             controller.stageLoop();
         }
         catch (GameException e) {
-            System.err.println("Un problème est survenue... " + e.getMessage());
+            System.err.println("Problem detected... " + e.getMessage());
         }
     }
 }

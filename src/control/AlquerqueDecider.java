@@ -22,7 +22,7 @@ public class AlquerqueDecider extends Decider {
     public static final int MODE_HEURISTIC = 1;
     public static final int MODE_MINIMAX   = 2;
 
-    private static final int MINIMAX_DEPTH = 7;
+    private static final int MINIMAX_DEPTH = 5;
 
     // Values of the following options
     private static final int W_PAWNS    = 100;
@@ -73,45 +73,26 @@ public class AlquerqueDecider extends Decider {
 
     // Random mode: we still have it because it's defined as a noob level
     private ActionList decideRandom(AlquerqueStageModel stage, AlquerqueBoard board, int color) {
-        // get all player's pawns
         Pawn[] myPawns = getPawns(stage, color);
-        List<int[]> captureOptions = new ArrayList<>();
+        List<int[]> allOptions = new ArrayList<>();
 
-        // get all pawns's captures and add them in captureOptions
         for (Pawn p : myPawns) {
             if (p.isVisible()) {
                 int[] cell = board.getElementCell(p);
                 if (!(cell == null)) {
                     for (Point dst : board.getCaptures(cell[0], cell[1], color))
-                        captureOptions.add(new int[]{cell[0], cell[1], dst.y, dst.x});
-                }
-            }
-        }
-
-        // if there are one or many captures chose one randomly
-        if (!captureOptions.isEmpty()) {
-            int[] choice = captureOptions.get(rng.nextInt(captureOptions.size()));
-            return buildCapture(board, choice[0], choice[1], choice[2], choice[3]);
-        }
-
-        // Else do the same but with the simple moves
-        List<int[]> moveOptions = new ArrayList<>();
-        for (Pawn p : myPawns) {
-            if (p.isVisible()) {
-                int[] cell = board.getElementCell(p);
-                if (!(cell == null)) {
+                        allOptions.add(new int[]{cell[0], cell[1], dst.y, dst.x});
                     for (Point dst : board.getSimpleMoves(cell[0], cell[1]))
-                        moveOptions.add(new int[]{cell[0], cell[1], dst.y, dst.x});
+                        allOptions.add(new int[]{cell[0], cell[1], dst.y, dst.x});
                 }
             }
         }
 
-        // We never saw it but according to the rules a player have to forfeit if he doesn't have any moves
-        if (moveOptions.isEmpty())
+        if (allOptions.isEmpty())
             return forfeit();
 
-        int[] choice = moveOptions.get(rng.nextInt(moveOptions.size()));
-        return buildMove(board, choice[0], choice[1], choice[2], choice[3]);
+        int[] choice = allOptions.get(rng.nextInt(allOptions.size()));
+        return buildActionFromMove(board, choice);
     }
 
 
@@ -376,57 +357,38 @@ public class AlquerqueDecider extends Decider {
 
     // Collect all available moves of the current player (FOR THE SNAPSHOTS)
     private List<int[]> collectAllMoves(int[][] board, int color) {
-        List<int[]> captures = new ArrayList<>();
-        List<int[]> simple   = new ArrayList<>();
+        List<int[]> all = new ArrayList<>();
 
         for (int r = 0; r < 5; r++) {
             for (int c = 0; c < 5; c++) {
                 if (board[r][c] == color) {
                     for (int[] dst : getCaptures(board, r, c, color))
-                        captures.add(new int[]{r, c, dst[0], dst[1]});
-                    if (captures.isEmpty())
-                        for (int[] dst : getSimpleMoves(board, r, c))
-                            simple.add(new int[]{r, c, dst[0], dst[1]});
+                        all.add(new int[]{r, c, dst[0], dst[1]});
+                    for (int[] dst : getSimpleMoves(board, r, c))
+                        all.add(new int[]{r, c, dst[0], dst[1]});
                 }
             }
         }
-
-        if (!captures.isEmpty())
-            return captures;
-
-        return simple;
+        return all;
     }
 
-    // Collect all the possible moves of a player, but if there is at least one capture, it returns only the captures
+    // Collect all the possible moves of a player
     private List<int[]> collectAllMoves(AlquerqueBoard board, AlquerqueStageModel stage, int color) {
         Pawn[] pawns = getPawns(stage, color);
-
-        List<int[]> captures = new ArrayList<>();
-        List<int[]> simple   = new ArrayList<>();
+        List<int[]> all = new ArrayList<>();
 
         for (Pawn p : pawns) {
             if (p.isVisible()) {
                 int[] cell = board.getElementCell(p);
-
-                if (!(cell == null))
+                if (!(cell == null)) {
                     for (Point dst : board.getCaptures(cell[0], cell[1], color))
-                        captures.add(new int[]{cell[0], cell[1], dst.y, dst.x});
-            }
-        }
-
-        if (!captures.isEmpty())
-            return captures;
-
-        for (Pawn p : pawns) {
-            if (p.isVisible()) {
-                int[] cell = board.getElementCell(p);
-
-                if (!(cell == null))
+                        all.add(new int[]{cell[0], cell[1], dst.y, dst.x});
                     for (Point dst : board.getSimpleMoves(cell[0], cell[1]))
-                        simple.add(new int[]{cell[0], cell[1], dst.y, dst.x});
+                        all.add(new int[]{cell[0], cell[1], dst.y, dst.x});
+                }
             }
         }
-        return simple;
+        return all;
     }
 
 

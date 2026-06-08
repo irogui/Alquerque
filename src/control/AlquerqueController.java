@@ -26,6 +26,8 @@ public class AlquerqueController extends Controller {
     private final int whiteIaMode;
     private final int blackIaMode;
 
+    private boolean captureThisTurn = false;
+
 
     public AlquerqueController(Model model, View view, int whiteIaMode, int blackIaMode, Scanner fileScanner) {
         super(model, view);
@@ -42,12 +44,14 @@ public class AlquerqueController extends Controller {
         update();
 
         while (!model.isEndStage()) {
+            captureThisTurn = false;
             playTurn();
-            endOfTurn();
-            System.out.println("");
-            update();
+            if (!model.isEndStage()) {
+                endOfTurn();
+                System.out.println("");
+                update();
+            }
         }
-        endGame();
     }
 
     private void playTurn() {
@@ -56,6 +60,20 @@ public class AlquerqueController extends Controller {
 
         System.out.println("Turn: " + stage.getCount());
         System.out.println("Pawns left (" + stage.getWhitePawnsLeft() + "/" + stage.getBlackPawnsLeft() + ") \n");
+
+        // Stop the turn if the player has no more moves to do
+        int currentColor;
+        if (model.getIdPlayer() == 0)
+            currentColor = Pawn.PAWN_WHITE;
+        else
+            currentColor = Pawn.PAWN_BLACK;
+
+        boolean hasAnyMove = hasAnyMoveAtAll(stage, currentColor);
+        if (!hasAnyMove) {
+            System.out.println("The player " + p.getName() + " has no moves !");
+            stage.checkPlayerBlocked(model.getIdPlayer());
+            return;
+        }
 
         if (p.getType() == Player.COMPUTER) {
             System.out.println("COMPUTER THINKING...");
@@ -69,7 +87,6 @@ public class AlquerqueController extends Controller {
             }
 
             int currentIaMode;
-
             if (model.getIdPlayer() == 0) {
                 currentIaMode = whiteIaMode;
             }
@@ -85,7 +102,8 @@ public class AlquerqueController extends Controller {
             // If the AI made a capture, allow it to chain further captures
             Point lastCapture = decider.getLastCaptureDestination();
             if (lastCapture != null) {
-                multipleCaptures(lastCapture);
+                captureThisTurn = true;
+                multipleCapturesAI(lastCapture);
             }
         }
 
@@ -134,6 +152,7 @@ public class AlquerqueController extends Controller {
     public void endOfTurn() {
         model.setNextPlayer();
         AlquerqueStageModel stage = (AlquerqueStageModel) model.getGameStage();
+        stage.registerCaptureMade(captureThisTurn);
 
         // increment of the turns when the white player plays
         if (model.getIdPlayer() == 0)
@@ -192,11 +211,6 @@ public class AlquerqueController extends Controller {
         Point dst = new Point(dstCol, dstRow);
         boolean isCapture = captures.contains(dst);
 
-        // If a capture is available but the player didn't noticed it
-        if (captureAvailable && !isCapture) {
-            System.out.println("First you have to capture a pawn...");
-            return false;
-        }
 
         if (isCapture) {
             // Find the opponent's pawn to deltete it
@@ -212,7 +226,8 @@ public class AlquerqueController extends Controller {
             new ActionPlayer(model, this, actions).start();
 
             // Call a method to automaticalt capture again and again opponent's pawns if it is possible from the destination point
-            multipleCaptures(dst);
+            captureThisTurn = true;
+            multipleCapturesHuman(dst);
         }
         else {
             // Simple move: just verify if the current pawn can move to the wished direction
@@ -253,9 +268,32 @@ public class AlquerqueController extends Controller {
         return false;
     }
 
+    private boolean hasAnyMoveAtAll(AlquerqueStageModel stage, int color) {
+        AlquerqueBoard board = stage.getBoard();
+        Pawn[] pawns;
+
+        if (color == Pawn.PAWN_WHITE)
+            pawns = stage.getWhitePawns();
+        else
+            pawns = stage.getBlackPawns();
+
+        for (Pawn p : pawns) {
+            if (p.isVisible()) {
+                int[] coords = board.getElementCell(p);
+                if (coords != null) {
+                    if (!board.getCaptures(coords[0], coords[1], color).isEmpty())
+                        return true;
+                    if (!board.getSimpleMoves(coords[0], coords[1]).isEmpty())
+                        return true;
+                }
+            }
+        }
+        return false;
+    }
+
 
     // Recapture automaticly if is it possible from the registered position on param for the current player
-    public void multipleCaptures(Point point) {
+    public void multipleCapturesAI(Point point) {
         AlquerqueStageModel stage = (AlquerqueStageModel) model.getGameStage();
         AlquerqueBoard board = stage.getBoard();
 
@@ -296,6 +334,77 @@ public class AlquerqueController extends Controller {
         new ActionPlayer(model, this, actions).start();
 
         // call the same function again
-        multipleCaptures(nextDst);
+        multipleCapturesAI(nextDst);
+    }
+
+    public void multipleCapturesHuman(Point point) {
+        AlquerqueStageModel stage = (AlquerqueStageModel) model.getGameStage();
+        AlquerqueBoard board = stage.getBoard();
+
+        int currentColor;
+        if (model.getIdPlayer() == 0)
+            currentColor = Pawn.PAWN_WHITE;
+        else
+            currentColor = Pawn.PAWN_BLACK;
+
+        int row = point.y;
+        int col = point.x;
+
+        List<Point> captures = board.getCaptures(row, col, currentColor);
+
+        if (captures.isEmpty()) {
+            return;
+        }
+
+        System.out.println("Recapture possible, choose an option :");
+        for (int i = 0; i < captures.size(); i++) {
+            Point c = captures.get(i);
+            char colChar = (char) ('A' + c.x);
+            char rowChar = (char) ('1' + c.y);
+            System.out.println("  " + (i + 1) + ") capture in " + colChar + rowChar);
+        }
+        System.out.println("  0) end your turn");
+
+        int choice = -1;
+        while (choice < 0 || choice > captures.size()) {
+            System.out.print("your choice : ");
+            String input;
+            if (fileScanner != null && fileScanner.hasNextLine()) {
+                input = fileScanner.nextLine().trim();
+                System.out.println(input);
+            }
+            else {
+                input = scanner.nextLine().trim();
+            }
+            try {
+                choice = Integer.parseInt(input);
+                if (choice < 0 || choice > captures.size()) {
+                    System.out.println("Invalid choice, retry.");
+                    choice = -1;
+                }
+            }
+            catch (NumberFormatException e) {
+                System.out.println("That's not a number.");
+            }
+        }
+
+        if (choice == 0) {
+            return;
+        }
+
+        Point nextDst = captures.get(choice - 1);
+        Pawn pawn = (Pawn) board.getElement(row, col);
+
+        int midRow = (row + nextDst.y) / 2;
+        int midCol = (col + nextDst.x) / 2;
+        Pawn captured = (Pawn) board.getElement(midRow, midCol);
+
+        ActionList actions = ActionFactory.generatePutInContainer(model, pawn, "alquerqueboard", nextDst.y, nextDst.x);
+        ActionList remove = ActionFactory.generateRemoveFromStage(model, captured);
+        actions.addAll(remove);
+        actions.setDoEndOfTurn(false);
+        new ActionPlayer(model, this, actions).start();
+
+        multipleCapturesHuman(nextDst);
     }
 }
