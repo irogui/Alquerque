@@ -3,16 +3,8 @@ package model;
 import boardifier.model.*;
 
 
-/**
- * Holds the complete state of an Alquerque game stage.
- * Stores the board, the two arrays of pawns, pawn counts, and the turn counter.
- * Registers a callback that is called whenever a pawn is removed from the board to update
- * the pawn count and check if the game is over.
- */
-
 public class AlquerqueStageModel extends GameStageModel {
 
-    // Elements
     private AlquerqueBoard board;
     private Pawn[] whitePawns;
     private Pawn[] blackPawns;
@@ -20,27 +12,24 @@ public class AlquerqueStageModel extends GameStageModel {
 
     private int whitePawnsLeft = 12;
     private int blackPawnsLeft = 12;
-
     private int count = 1;
-
-    private int turnsWithoutCapture = 0;
 
     public AlquerqueStageModel(String name, Model model) {
         super(name, model);
         setupCallbacks();
     }
 
-    // -- GETTERS ----------------------------------------------
+    // ------------------------------------------------------------------ getters
 
-    public AlquerqueBoard getBoard() { return board; }
-    public Pawn[] getWhitePawns() { return whitePawns; }
-    public Pawn[] getBlackPawns() { return blackPawns; }
-    public TextElement getPlayerName() { return playerName; }
-    public int getWhitePawnsLeft() { return whitePawnsLeft; }
-    public int getBlackPawnsLeft() { return blackPawnsLeft; }
-    public int getCount() { return count; }
+    public AlquerqueBoard getBoard()          { return board; }
+    public Pawn[]         getWhitePawns()     { return whitePawns; }
+    public Pawn[]         getBlackPawns()     { return blackPawns; }
+    public TextElement    getPlayerName()     { return playerName; }
+    public int            getWhitePawnsLeft() { return whitePawnsLeft; }
+    public int            getBlackPawnsLeft() { return blackPawnsLeft; }
+    public int            getCount()          { return count; }
 
-    //--- SETTERS ----------------------------------------------
+    // ------------------------------------------------------------------ setters
 
     public void setBoard(AlquerqueBoard board) {
         this.board = board;
@@ -62,72 +51,65 @@ public class AlquerqueStageModel extends GameStageModel {
         addElement(t);
     }
 
-    public void incrementCount() {
-        this.count ++;
-    }
+    public void incrementCount() { count++; }
 
-    public int getTurnsWithoutCapture() { return turnsWithoutCapture; }
-
-    public void registerCaptureMade(boolean captureMade) {
-        if (captureMade) {
-            turnsWithoutCapture = 0;
-        }
-        else {
-            turnsWithoutCapture ++;
-        }
-        checkEndOfGame();
-    }
-
+    // ------------------------------------------------------------------ callbacks
 
     private void setupCallbacks() {
-        /*
-         * After each player action this callback is called by boardifier
+
+        /**
+         *
+         * This is called by boardifier every time an element is selected or deselected by the player.
+         *
+         * - If nothing is selected: clear all reachable cell highlights.
+         * - If a pawn is selected: compute its reachable cells and highlight them.
+         *
+         * Captures are not mandatory in this version, so both simple moves
+         * and captures are always shown (captureOnly = false).
          */
+        onSelectionChange(() -> {
+            if (selected.isEmpty()) {
+                board.resetReachableCells(false);
+                return;
+            }
+
+            Pawn pawn = (Pawn) selected.get(0);
+            int[] cell = board.getElementCell(pawn);
+
+            if (cell == null) {
+                board.resetReachableCells(false);
+                return;
+            }
+
+            board.setValidCells(cell[0], cell[1], pawn.getColor(), false);
+        });
+
+
         onRemoveFromContainer((element, container, row, col) -> {
-            if (!(element instanceof Pawn))
-                return;
-
-            if (container != board)
-                return;
-
-            // If the pawn is still visible, it means that it's juste a simple move and not a capture
-            if (element.isVisible()) return;
+            if (!(element instanceof Pawn)) return;
+            if (container != board) return;
+            if (element.isVisible()) return; // simple move, not a capture
 
             Pawn p = (Pawn) element;
             if (p.getColor() == Pawn.PAWN_WHITE) {
                 whitePawnsLeft--;
-            }
-            else {
+            } else {
                 blackPawnsLeft--;
             }
             checkEndOfGame();
         });
     }
 
+    // ------------------------------------------------------------------ end of game
+
     private void checkEndOfGame() {
         if (whitePawnsLeft == 0) {
             model.setIdWinner(1);
             model.stopStage();
-        }
-        else if (blackPawnsLeft == 0) {
+        } else if (blackPawnsLeft == 0) {
             model.setIdWinner(0);
             model.stopStage();
         }
-        else if (turnsWithoutCapture >= 20) {
-            model.setIdWinner(-1);
-            model.stopStage();
-            System.out.println("20 tours sans prise : égalité !");
-        }
-    }
-
-    public void checkPlayerBlocked(int currentPlayerId) {
-        if (currentPlayerId == 0) {
-            model.setIdWinner(1);
-        }
-        else {
-            model.setIdWinner(0);
-        }
-        model.stopStage();
     }
 
     @Override
