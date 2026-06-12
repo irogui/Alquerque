@@ -1,23 +1,28 @@
 package control;
 
-import boardifier.control.ActionPlayer;
 import boardifier.control.Controller;
 import boardifier.model.Model;
 import boardifier.model.action.ActionList;
+import boardifier.model.action.GameAction;
+import boardifier.model.animation.Animation;
 import javafx.application.Platform;
+import java.util.List;
 
-/**
- * An ActionPlayer that executes a post-action callback once all animations are
- * done, before re-enabling event capture and before triggering endOfTurn.
- * This avoids Platform.runLater for board-state updates, keeping them
- * synchronised with the action sequence without modifying boardifier.
- */
-public class AlquerqueChainAction extends ActionPlayer {
 
-    private final Runnable onDone;
+// This class is a different ActionPlayer made to execute a callback after the animations.
+// We use it to manage the chained captures
+
+public class AlquerqueChainAction extends Thread {
+
+    private Model model;
+    private Controller control;
+    private ActionList actions;
+    private Runnable onDone;
 
     public AlquerqueChainAction(Model model, Controller control, ActionList actions, Runnable onDone) {
-        super(model, control, actions);
+        this.model = model;
+        this.control = control;
+        this.actions = actions;
         this.onDone = onDone;
     }
 
@@ -25,7 +30,34 @@ public class AlquerqueChainAction extends ActionPlayer {
     public void run() {
         model.setCaptureEvents(false);
 
-        playActionsReflect();
+        for (List<GameAction> pack : actions.getActions()) {
+
+            for (GameAction action : pack) {
+                if (!action.isAnimateBeforeExecute()) {
+                    action.execute();
+                }
+            }
+
+            Animation[] animations = new Animation[pack.size()];
+            for (int i = 0; i < pack.size(); i++) {
+                animations[i] = pack.get(i).setupAnimation();
+                if (animations[i] != null) {
+                    animations[i].start();
+                }
+            }
+
+            for (int i = 0; i < pack.size(); i++) {
+                if (animations[i] != null) {
+                    animations[i].getAnimationState().waitStop();
+                }
+            }
+
+            for (GameAction action : pack) {
+                if (action.isAnimateBeforeExecute()) {
+                    action.execute();
+                }
+            }
+        }
 
         if (onDone != null) {
             onDone.run();
@@ -35,22 +67,6 @@ public class AlquerqueChainAction extends ActionPlayer {
 
         if (!model.isEndStage() && !model.isEndGame() && actions.mustDoEndOfTurn()) {
             Platform.runLater(() -> control.endOfTurn());
-        }
-    }
-
-    /**
-     * Calls the protected playActions method via reflection since boardifier
-     * declares it as private. Falls back to super.run() if reflection fails.
-     */
-    private void playActionsReflect() {
-        try {
-            java.lang.reflect.Method m =
-                    ActionPlayer.class.getDeclaredMethod("playActions", ActionList.class);
-            m.setAccessible(true);
-            m.invoke(this, actions);
-        } catch (Exception e) {
-            // Fallback: let the parent handle everything (no callback in that case)
-            super.run();
         }
     }
 }

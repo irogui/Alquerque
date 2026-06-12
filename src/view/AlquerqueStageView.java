@@ -16,7 +16,7 @@ public class AlquerqueStageView extends GameStageView {
     public void createLooks() {
         AlquerqueStageModel model = (AlquerqueStageModel) gameStageModel;
 
-        addLook(new AlquerqueBoardLook(600, model.getBoard()));
+        addLook(new AlquerqueBoardLook(700, model.getBoard()));
 
         for (int i = 0; i < 12; i++) {
             addLook(new PawnLook(40, model.getWhitePawns()[i]));

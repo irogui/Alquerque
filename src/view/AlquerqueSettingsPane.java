@@ -64,7 +64,7 @@ public class AlquerqueSettingsPane {
         spDepth.setEditable(true);
         spDepth.setPrefWidth(70);
 
-        CheckBox cbDraw = new CheckBox("Draw after 10 moves without capture");
+        CheckBox cbDraw = new CheckBox("Draw after 20 moves without capture");
         cbDraw.setSelected(drawRule);
 
         Runnable updateControls = () -> {

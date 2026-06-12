@@ -9,9 +9,6 @@ import boardifier.model.GameStageModel;
 
 /**
  * A basic pawn element with a single fixed attribute: its color.
- *
- * CHANGES FROM CONSOLE VERSION:
- * - Added update() to handle movement animations frame by frame.
  */
 public class Pawn extends GameElement {
 
@@ -21,6 +18,7 @@ public class Pawn extends GameElement {
     private int color;
 
     public Pawn(int color, GameStageModel gameStageModel) {
+        // registering element types defined especially for this game
         super(gameStageModel);
         ElementTypes.register("pawn", 50);
         type = ElementTypes.getType("pawn");

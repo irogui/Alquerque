@@ -97,16 +97,6 @@ public class AlquerqueStageModel extends GameStageModel {
 
     private void setupCallbacks() {
 
-        /**
-         *
-         * This is called by boardifier every time an element is selected or deselected by the player.
-         *
-         * - If nothing is selected: clear all reachable cell highlights.
-         * - If a pawn is selected: compute its reachable cells and highlight them.
-         *
-         * Captures are not mandatory in this version, so both simple moves
-         * and captures are always shown (captureOnly = false).
-         */
         onSelectionChange(() -> {
             if (selected.isEmpty()) {
                 board.resetReachableCells(false);

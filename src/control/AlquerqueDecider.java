@@ -43,8 +43,8 @@ public class AlquerqueDecider extends Decider {
 
     // Values of the following options
     private static final int W_PAWNS    = 100;
-    private static final int W_MOBILITY =  10;
-    private static final int W_CAPTURE  =  25;
+    private static final int W_MOBILITY =  15;
+    private static final int W_CAPTURE  =   5;
 
     // The 2 types of directions's possibilities for a pawn
     private static final int[][] ALL_DIRS = {
@@ -59,8 +59,6 @@ public class AlquerqueDecider extends Decider {
 
     private static final Random rng = new Random();
     private final int aiMode;
-    private Point lastCaptureDestination = null;
-
 
     public AlquerqueDecider(Model model, Controller control, int aiMode) {
         super(model, control);
@@ -144,7 +142,7 @@ public class AlquerqueDecider extends Decider {
         return buildActionFromMove(board, chosen);
     }
 
-    // MINIMAX mod
+    // MINIMAX mode
     private ActionList decideMinimax(AlquerqueStageModel stage, AlquerqueBoard board, int color) {
         int[][] simulation = boardSnapshot(board);
 
@@ -166,7 +164,7 @@ public class AlquerqueDecider extends Decider {
         for (int[] m : moves) {
             int[][] child = applyMove(simulation, m[0], m[1], m[2], m[3], color);
 
-            int score = minimaxAB(child, MINIMAX_DEPTH - 1, false, color, opponent, 0, Integer.MAX_VALUE); // Integer.MAX_VALUE sert à prendre la valeur max possible d'un int
+            int score = minimaxAB(child, MINIMAX_DEPTH - 1, false, color, opponent, Integer.MIN_VALUE, Integer.MAX_VALUE);
 
             if (score > bestScore) {
                 bestScore = score;
@@ -178,6 +176,7 @@ public class AlquerqueDecider extends Decider {
             }
         }
 
+        // int[] chosen = bestMoves.get(0);
         int[] chosen = bestMoves.get(rng.nextInt(bestMoves.size()));
         return buildActionFromMove(board, chosen);
     }
@@ -190,7 +189,7 @@ public class AlquerqueDecider extends Decider {
         else
             opponent = Pawn.PAWN_WHITE;
 
-        // end the recursion if the max depath has been reached or if the game is finished
+        // end the recursion if the max depth has been reached or if the game is finished
         if (depth == 0 || isTerminal(board)) {
             return evaluate(board, aiColor);
         }
@@ -198,7 +197,7 @@ public class AlquerqueDecider extends Decider {
         List<int[]> moves = collectAllMoves(board, currentColor);
 
         if (maximizing) {
-            int maxEval = Integer.MIN_VALUE;;
+            int maxEval = Integer.MIN_VALUE;
             for (int[] m : moves) {
                 int[][] child = applyMove(board, m[0], m[1], m[2], m[3], currentColor);
                 int eval = minimaxAB(child, depth - 1, false, aiColor, opponent, alpha, beta);
@@ -345,7 +344,7 @@ public class AlquerqueDecider extends Decider {
             return ORTHO_DIRS;
     }
 
-    // Test a simple move on a noard
+    // Test a simple move on a board
     private List<int[]> getSimpleMoves(int[][] board, int r, int c) {
         List<int[]> list = new ArrayList<>();
 
@@ -359,7 +358,7 @@ public class AlquerqueDecider extends Decider {
         return list;
     }
 
-    // Test captures on a board
+    // get all captures of a pawn
     private List<int[]> getCaptures(int[][] board, int r, int c, int color) {
         List<int[]> list = new ArrayList<>();
 
@@ -437,10 +436,7 @@ public class AlquerqueDecider extends Decider {
         int color = pawn.getColor();
         ((AlquerqueStageModel) model.getGameStage()).setMovesSinceLastCapture(0);
 
-        ActionList actions = ActionFactory.generatePutInContainer(
-                control, model, pawn, "alquerqueboard", dstR, dstC,
-                AnimationTypes.MOVE_LINEARPROP, 10
-        );
+        ActionList actions = ActionFactory.generatePutInContainer(control, model, pawn, "alquerqueboard", dstR, dstC, AnimationTypes.MOVE_LINEARPROP, 10);
         if (captured != null)
             actions.addAll(ActionFactory.generateRemoveFromStage(model, captured));
 
@@ -475,7 +471,6 @@ public class AlquerqueDecider extends Decider {
                 new AlquerqueChainAction(model, control, chain, null).start();
             }).start();
 
-            // Return a no-op list: AlquerqueChainAction above handles everything
             ActionList empty = new ActionList(false);
             return empty;
         }
@@ -505,6 +500,4 @@ public class AlquerqueDecider extends Decider {
     private static boolean inBounds(int r, int c) {
         return r >= 0 && r < 5 && c >= 0 && c < 5;
     }
-
-    public Point getLastCaptureDestination() { return lastCaptureDestination; }
 }
