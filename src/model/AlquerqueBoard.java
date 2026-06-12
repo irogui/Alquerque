@@ -33,9 +33,23 @@ public class AlquerqueBoard extends ContainerElement {
             {-1, 0}, {1, 0}, {0, 1}, {0, -1}
     };
 
+    // Coordinates of the destinations after a capture
+    private boolean[][] captureCells = new boolean[5][5];
+
     public AlquerqueBoard(int x, int y, GameStageModel gameStageModel) {
         // call the super-constructor to create a 5x5 grid, named "alquerqueboard", and in x,y in space
         super("alquerqueboard", x, y, 5, 5, gameStageModel);
+    }
+
+    public boolean[][] getCaptureCells() { return captureCells; }
+    public void resetCaptureCells() {
+        for (int i = 0; i < 5; i++)
+            for (int j = 0; j < 5; j++)
+                captureCells[i][j] = false;
+    }
+
+    public boolean canReachOrCaptureCell(int row, int col) {
+        return reachableCells[row][col] || captureCells[row][col];
     }
 
     /**
@@ -112,16 +126,14 @@ public class AlquerqueBoard extends ContainerElement {
      */
     public void setValidCells(int row, int col, int color, boolean captureOnly) {
         resetReachableCells(false);
-        List<Point> valid;
+        resetCaptureCells();
 
-        if (captureOnly) {
-            valid = getCaptures(row, col, color);
-        } else {
-            valid = getSimpleMoves(row, col);
-        }
-
-        for (Point p : valid) {
+        for (Point p : getSimpleMoves(row, col))
             reachableCells[p.y][p.x] = true;
-        }
+
+        for (Point p : getCaptures(row, col, color))
+            captureCells[p.y][p.x] = true;
+
+        addChangeFaceEvent();
     }
 }

@@ -1,11 +1,28 @@
 package control;
 
-import boardifier.control.*;
-import boardifier.model.*;
+import boardifier.control.ActionFactory;
+import boardifier.control.Controller;
+import boardifier.control.Decider;
+import boardifier.model.Coord2D;
+import boardifier.model.GameElement;
+import boardifier.model.Model;
 import boardifier.model.action.ActionList;
-import model.*;
+import boardifier.model.action.GameAction;
+import boardifier.model.action.PutInContainerAction;
+import boardifier.model.action.RemoveFromContainerAction;
+import boardifier.model.animation.AnimationTypes;
+import boardifier.view.ElementLook;
+import boardifier.view.GridLook;
+import javafx.geometry.Point2D;
+import model.AlquerqueBoard;
+import model.AlquerqueStageModel;
+import model.Pawn;
 
-import java.awt.Point;
+import java.awt.*;
+import java.util.Calendar;
+import java.util.List;
+import java.util.Random;
+
 import java.util.*;
 
 /**
@@ -22,7 +39,7 @@ public class AlquerqueDecider extends Decider {
     public static final int MODE_HEURISTIC = 1;
     public static final int MODE_MINIMAX   = 2;
 
-    private static final int MINIMAX_DEPTH = 5;
+    private final int MINIMAX_DEPTH;
 
     // Values of the following options
     private static final int W_PAWNS    = 100;
@@ -48,6 +65,7 @@ public class AlquerqueDecider extends Decider {
     public AlquerqueDecider(Model model, Controller control, int aiMode) {
         super(model, control);
         this.aiMode = aiMode;
+        this.MINIMAX_DEPTH = view.AlquerqueSettingsPane.getMinimaxDepth();
     }
 
 
@@ -405,8 +423,9 @@ public class AlquerqueDecider extends Decider {
 
     private ActionList buildMove(AlquerqueBoard board, int srcR, int srcC, int dstR, int dstC) {
         Pawn pawn = (Pawn) board.getElement(srcR, srcC);
-        ActionList actions = ActionFactory.generatePutInContainer(model, pawn, "alquerqueboard", dstR, dstC);
+        ActionList actions = ActionFactory.generatePutInContainer(control, model, pawn, "alquerqueboard", dstR, dstC, AnimationTypes.MOVE_LINEARPROP, 10);
         actions.setDoEndOfTurn(true);
+        ((AlquerqueStageModel) model.getGameStage()).setMovesSinceLastCapture(((AlquerqueStageModel) model.getGameStage()).getMovesSinceLastCapture() + 1);
         return actions;
     }
 
@@ -414,19 +433,64 @@ public class AlquerqueDecider extends Decider {
         Pawn pawn = (Pawn) board.getElement(srcR, srcC);
         int midR = (srcR + dstR) / 2;
         int midC = (srcC + dstC) / 2;
-
         Pawn captured = (Pawn) board.getElement(midR, midC);
-        ActionList actions = ActionFactory.generatePutInContainer(model, pawn, "alquerqueboard", dstR, dstC);
-        actions.addAll(ActionFactory.generateRemoveFromStage(model, captured));
-        actions.setDoEndOfTurn(true);
+        int color = pawn.getColor();
+        ((AlquerqueStageModel) model.getGameStage()).setMovesSinceLastCapture(0);
 
-        lastCaptureDestination = new Point(dstC, dstR);
-        return actions;
+        ActionList actions = ActionFactory.generatePutInContainer(
+                control, model, pawn, "alquerqueboard", dstR, dstC,
+                AnimationTypes.MOVE_LINEARPROP, 10
+        );
+        if (captured != null)
+            actions.addAll(ActionFactory.generateRemoveFromStage(model, captured));
+
+        int[][] snap = boardSnapshot(board);
+        snap[dstR][dstC] = color;
+        snap[srcR][srcC] = EMPTY;
+        snap[midR][midC] = EMPTY;
+        List<int[]> nextCaptures = getCaptures(snap, dstR, dstC, color);
+
+        if (!nextCaptures.isEmpty()) {
+            actions.setDoEndOfTurn(false);
+
+            AlquerqueStageModel stage = (AlquerqueStageModel) model.getGameStage();
+            stage.setChainPawn(pawn);
+            stage.setState(AlquerqueStageModel.STATE_CHAINCAPTURE);
+
+            final int nextSrcR = dstR, nextSrcC = dstC;
+            final int nextDstR = nextCaptures.get(0)[0];
+            final int nextDstC = nextCaptures.get(0)[1];
+
+            new AlquerqueChainAction(model, control, actions, () -> {
+                AlquerqueBoard currentBoard = stage.getBoard();
+                int midNextR = (nextSrcR + nextDstR) / 2;
+                int midNextC = (nextSrcC + nextDstC) / 2;
+                if (currentBoard.getElement(midNextR, midNextC) == null) {
+                    stage.setChainPawn(null);
+                    stage.setState(AlquerqueStageModel.STATE_SELECTPAWN);
+                    javafx.application.Platform.runLater(() -> control.endOfTurn());
+                    return;
+                }
+                ActionList chain = buildCapture(currentBoard, nextSrcR, nextSrcC, nextDstR, nextDstC);
+                new AlquerqueChainAction(model, control, chain, null).start();
+            }).start();
+
+            // Return a no-op list: AlquerqueChainAction above handles everything
+            ActionList empty = new ActionList(false);
+            return empty;
+        }
+        else {
+            actions.setDoEndOfTurn(true);
+            AlquerqueStageModel stage = (AlquerqueStageModel) model.getGameStage();
+            stage.setChainPawn(null);
+            stage.setState(AlquerqueStageModel.STATE_SELECTPAWN);
+            return actions;
+        }
     }
 
     private ActionList forfeit() {
         model.setIdWinner(model.getIdPlayer() == 0 ? 1 : 0);
-        model.stopStage();
+        model.stopGame();
         return new ActionList();
     }
 

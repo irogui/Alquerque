@@ -1,5 +1,7 @@
 package model;
 
+import boardifier.control.Logger;
+import boardifier.model.animation.Animation;
 import boardifier.model.animation.AnimationStep;
 import boardifier.model.ElementTypes;
 import boardifier.model.GameElement;
@@ -20,8 +22,8 @@ public class Pawn extends GameElement {
 
     public Pawn(int color, GameStageModel gameStageModel) {
         super(gameStageModel);
-        ElementTypes.register("pion", 50);
-        type = ElementTypes.getType("pion");
+        ElementTypes.register("pawn", 50);
+        type = ElementTypes.getType("pawn");
         this.color = color;
     }
 
@@ -29,22 +31,19 @@ public class Pawn extends GameElement {
         return color;
     }
 
-    /**
-     * If an animation is attached to this pawn advance it by one step and move the pawn to that position.
-     * When all steps are consumed, set animation to null to signal completion.
-     *
-     * Without this method, pawns would teleport instantly instead of sliding smoothly across the board.
-     */
-    @Override
     public void update() {
+        // if must be animated, move the pawn
         if (animation != null) {
             AnimationStep step = animation.next();
-            if (step != null) {
-                // Move the pawn to the coordinates of the current step
-                setLocation(step.getInt(0), step.getInt(1));
-            } else {
-                // No more steps: animation is complete
+            if (step == null) {
                 animation = null;
+            }
+            else if (step == Animation.NOPStep) {
+                Logger.debug("nothing to do", this);
+            }
+            else {
+                Logger.debug("move animation", this);
+                setLocation(step.getInt(0), step.getInt(1));
             }
         }
     }

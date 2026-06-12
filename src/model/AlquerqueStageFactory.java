@@ -26,7 +26,7 @@ public class AlquerqueStageFactory extends StageElementsFactory {
 
         // Coordinates are now in pixels (x=30, y=60) instead of characters.
         // The board is placed 30px from the left edge and 60px from the top, leaving room for the menu bar and the current player text.
-        AlquerqueBoard board = new AlquerqueBoard(30, 60, stageModel);
+        AlquerqueBoard board = new AlquerqueBoard(25, 65, stageModel);
         stageModel.setBoard(board);
 
         // Create the 12 white pawns
@@ -65,7 +65,20 @@ public class AlquerqueStageFactory extends StageElementsFactory {
         // Coordinates in pixels for the current player text element.
         // Placed at the top left, 30px from the left edge and 40px from the top.
         TextElement playerName = new TextElement(stageModel.getCurrentPlayerName() + " to play", stageModel);
-        playerName.setLocation(30, 40);
+        playerName.setLocation(55, 40);
         stageModel.setPlayerName(playerName);
+
+
+        TextElement turnCount = new TextElement("Turn: 1", stageModel);
+        turnCount.setLocation(250, 40);
+        stageModel.setTurnCount(turnCount);
+
+        TextElement whitePawnsText = new TextElement("White: 12", stageModel);
+        whitePawnsText.setLocation(400, 40);
+        stageModel.setWhitePawnsText(whitePawnsText);
+
+        TextElement blackPawnsText = new TextElement("Black: 12", stageModel);
+        blackPawnsText.setLocation(530, 40);
+        stageModel.setBlackPawnsText(blackPawnsText);
     }
 }

@@ -5,7 +5,14 @@ import boardifier.model.*;
 
 public class AlquerqueStageModel extends GameStageModel {
 
+    public final static int STATE_SELECTPAWN = 1;
+    public final static int STATE_SELECTDEST = 2;
+    public final static int STATE_CHAINCAPTURE = 3;
+
+    private Pawn chainPawn = null;
+
     private AlquerqueBoard board;
+
     private Pawn[] whitePawns;
     private Pawn[] blackPawns;
     private TextElement playerName;
@@ -13,9 +20,16 @@ public class AlquerqueStageModel extends GameStageModel {
     private int whitePawnsLeft = 12;
     private int blackPawnsLeft = 12;
     private int count = 1;
+    private int movesSinceLastCapture = 0;
+
+    private TextElement turnCount;
+    private TextElement whitePawnsText;
+    private TextElement blackPawnsText;
+
 
     public AlquerqueStageModel(String name, Model model) {
         super(name, model);
+        state = STATE_SELECTPAWN;
         setupCallbacks();
     }
 
@@ -25,9 +39,16 @@ public class AlquerqueStageModel extends GameStageModel {
     public Pawn[]         getWhitePawns()     { return whitePawns; }
     public Pawn[]         getBlackPawns()     { return blackPawns; }
     public TextElement    getPlayerName()     { return playerName; }
-    public int            getWhitePawnsLeft() { return whitePawnsLeft; }
-    public int            getBlackPawnsLeft() { return blackPawnsLeft; }
-    public int            getCount()          { return count; }
+
+    public int getMovesSinceLastCapture() { return movesSinceLastCapture; }
+    public void setMovesSinceLastCapture(int num) { movesSinceLastCapture = num; }
+
+    public TextElement getTurnCount()      { return turnCount; }
+    public TextElement getWhitePawnsText() { return whitePawnsText; }
+    public TextElement getBlackPawnsText() { return blackPawnsText; }
+
+    public Pawn getChainPawn()       { return chainPawn; }
+
 
     // ------------------------------------------------------------------ setters
 
@@ -51,7 +72,26 @@ public class AlquerqueStageModel extends GameStageModel {
         addElement(t);
     }
 
-    public void incrementCount() { count++; }
+    public void incrementCount() {
+        count++;
+        turnCount.setText("Turn: " + count);
+    }
+
+
+    public void setTurnCount(TextElement t)      {
+        this.turnCount = t;
+        addElement(t);
+    }
+    public void setWhitePawnsText(TextElement t) {
+        this.whitePawnsText = t;
+        addElement(t);
+    }
+    public void setBlackPawnsText(TextElement t) {
+        this.blackPawnsText = t;
+        addElement(t);
+    }
+
+    public void setChainPawn(Pawn p) { chainPawn = p; }
 
     // ------------------------------------------------------------------ callbacks
 
@@ -70,6 +110,8 @@ public class AlquerqueStageModel extends GameStageModel {
         onSelectionChange(() -> {
             if (selected.isEmpty()) {
                 board.resetReachableCells(false);
+                board.resetCaptureCells();
+                board.addChangeFaceEvent();
                 return;
             }
 
@@ -78,6 +120,8 @@ public class AlquerqueStageModel extends GameStageModel {
 
             if (cell == null) {
                 board.resetReachableCells(false);
+                board.resetCaptureCells();
+                board.addChangeFaceEvent();
                 return;
             }
 
@@ -88,13 +132,16 @@ public class AlquerqueStageModel extends GameStageModel {
         onRemoveFromContainer((element, container, row, col) -> {
             if (!(element instanceof Pawn)) return;
             if (container != board) return;
-            if (element.isVisible()) return; // simple move, not a capture
+            if (element.isVisible()) return;
 
             Pawn p = (Pawn) element;
             if (p.getColor() == Pawn.PAWN_WHITE) {
-                whitePawnsLeft--;
-            } else {
-                blackPawnsLeft--;
+                whitePawnsLeft --;
+                whitePawnsText.setText("White left: " + whitePawnsLeft);
+            }
+            else {
+                blackPawnsLeft --;
+                blackPawnsText.setText("Black left: " + blackPawnsLeft);
             }
             checkEndOfGame();
         });
@@ -105,10 +152,11 @@ public class AlquerqueStageModel extends GameStageModel {
     private void checkEndOfGame() {
         if (whitePawnsLeft == 0) {
             model.setIdWinner(1);
-            model.stopStage();
-        } else if (blackPawnsLeft == 0) {
+            model.stopGame();
+        }
+        else if (blackPawnsLeft == 0) {
             model.setIdWinner(0);
-            model.stopStage();
+            model.stopGame();
         }
     }
 
