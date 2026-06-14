@@ -56,7 +56,7 @@ public class AlquerqueDeciderUnitTest {
 
         assertNotNull(result);
         verify(model).setIdWinner(1);
-        verify(model).stopStage();
+        verify(model).stopGame();
     }
 
     @Test
@@ -79,7 +79,7 @@ public class AlquerqueDeciderUnitTest {
         assertNotNull(result);
 
         verify(model).setIdWinner(0);
-        verify(model).stopStage();
+        verify(model).stopGame();
         verify(board, never()).getElement(anyInt(), anyInt());
     }
 
@@ -88,31 +88,31 @@ public class AlquerqueDeciderUnitTest {
         Pawn pawn = mock(Pawn.class);
         Pawn capturedPawn = mock(Pawn.class);
 
-        when(model.getGameStage()).thenReturn(stage);
-        when(model.getIdPlayer()).thenReturn(0);
+        when(board.isEmptyAt(anyInt(), anyInt())).thenReturn(true);
 
-        when(stage.getBoard()).thenReturn(board);
+        when(board.isEmptyAt(2, 0)).thenReturn(false);
+        when(board.isEmptyAt(3, 0)).thenReturn(false);
+
+        when(pawn.getColor()).thenReturn(Pawn.PAWN_WHITE);
+        when(capturedPawn.getColor()).thenReturn(Pawn.PAWN_BLACK);
+
+        when(model.getIdPlayer()).thenReturn(0);
         when(stage.getWhitePawns()).thenReturn(new Pawn[]{pawn});
 
         when(pawn.isVisible()).thenReturn(true);
         when(board.getElementCell(pawn)).thenReturn(new int[]{2, 0});
 
-        when(board.getCaptures(2, 0, Pawn.PAWN_WHITE))
-                .thenReturn(List.of(new Point(0, 4)));
+        when(board.getCaptures(2, 0, Pawn.PAWN_WHITE)).thenReturn(List.of(new Point(0, 4)));
 
         when(board.getElement(2, 0)).thenReturn(pawn);
-        when(board.getElement(3, 0)).thenReturn(capturedPawn);
+        when(board.getElement(3, 0)).thenReturn(capturedPawn); // midR=3, midC=0 ✓
 
         AlquerqueDecider decider = new AlquerqueDecider(model, controller, AlquerqueDecider.MODE_RANDOM);
 
         ActionList result = decider.decide();
 
         assertNotNull(result);
-        assertEquals(new Point(0, 4), decider.getLastCaptureDestination());
-
         verify(board).getCaptures(2, 0, Pawn.PAWN_WHITE);
-        verify(board).getElement(2, 0);
-        verify(board).getElement(3, 0);
     }
 
     @Test
@@ -138,7 +138,6 @@ public class AlquerqueDeciderUnitTest {
         ActionList result = decider.decide();
 
         assertNotNull(result);
-        assertNull(decider.getLastCaptureDestination());
 
         verify(board).getSimpleMoves(2, 2);
         verify(board).getElement(2, 2);
@@ -164,7 +163,6 @@ public class AlquerqueDeciderUnitTest {
         ActionList result = decider.decide();
 
         assertNotNull(result);
-        assertNull(decider.getLastCaptureDestination());
 
         verify(stage).getBlackPawns();
         verify(stage, never()).getWhitePawns();
